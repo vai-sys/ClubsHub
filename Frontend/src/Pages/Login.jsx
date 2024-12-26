@@ -51,13 +51,13 @@ const Login = () => {
      
       switch (userRole) {
         case 'superAdmin':
-          navigate('/admin-dashboard');
+          navigate('/superAdmin-dashboard');
           break;
         case 'student':
           navigate('/student-dashboard');
           break;
         case 'clubAdmin':
-          navigate('/club-dashboard');
+          navigate('/admin-dashboard');
           break;
         default:
           navigate('/login');
@@ -183,7 +183,7 @@ const Login = () => {
             <div className="text-sm text-gray-600">
               Don't have an account?{' '}
               <Link
-                to="/register"
+                to="/"
                 className="text-indigo-600 hover:text-indigo-700 font-medium"
               >
                 Sign up

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +7,8 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [clubAffiliation, setClubAffiliation] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,6 +16,7 @@ const Profile = () => {
       try {
         const response = await api.get('/auth/profile');
         setProfile(response.data.user);
+        setClubAffiliation(response.data.user.clubAffiliation || '');
       } catch (err) {
         if (err.response?.status === 401) {
           navigate('/login');
@@ -34,6 +38,16 @@ const Profile = () => {
       navigate('/login');
     } catch (err) {
       console.error('Logout failed:', err);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await api.put('/auth/update-profile', { clubAffiliation });
+      setProfile(prev => ({ ...prev, clubAffiliation }));
+      setIsEditing(false);
+    } catch (err) {
+      setError('Failed to update profile. Please try again.');
     }
   };
 
@@ -92,7 +106,42 @@ const Profile = () => {
 
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-500">Club Affiliation</label>
-              <p className="text-gray-900 font-medium">{profile?.clubAffiliation || 'None'}</p>
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={clubAffiliation}
+                    onChange={(e) => setClubAffiliation(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter club affiliation"
+                  />
+                  <button
+                    onClick={handleSave}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setClubAffiliation(profile?.clubAffiliation || '');
+                    }}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900 font-medium">{profile?.clubAffiliation || 'None'}</p>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

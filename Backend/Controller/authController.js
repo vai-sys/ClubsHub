@@ -23,31 +23,39 @@ const getTokenFromRequest = (req) => {
 
   return req.cookies.token;
 };
-
 exports.register = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, clubAffiliation } = req.body;
+
 
     if (!Object.values(UserRoles).includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
+
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+ 
     const hashedPassword = await bcrypt.hash(password, 10);
+
 
     const user = new User({
       email,
       password: hashedPassword,
       role: role || UserRoles.STUDENT,
+      clubAffiliation: clubAffiliation || null, 
     });
 
+
     await user.save();
+
+ 
     const token = generateToken(user);
 
-    // Set cookie
+
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -60,17 +68,20 @@ exports.register = async (req, res) => {
       user: {
         email: user.email,
         role: user.role,
+        clubAffiliation: user.clubAffiliation,
         createdAt: user.createdAt,
       },
-      token, 
+      token,
     });
   } catch (error) {
+
     res.status(500).json({
       message: 'Registration failed',
       error: error.message,
     });
   }
 };
+
 
 exports.login = async (req, res) => {
   try {
@@ -133,40 +144,7 @@ exports.logout = async (req, res) => {
   }
 };
 
-exports.updateClubAffiliation = async (req, res) => {
-  try {
-    const { clubAffiliation } = req.body;
 
-    const token = getTokenFromRequest(req);
-    if (!token) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    user.clubAffiliation = clubAffiliation;
-    await user.save();
-
-    res.json({
-      message: 'Club affiliation updated successfully',
-      user: {
-        email: user.email,
-        role: user.role,
-        clubAffiliation: user.clubAffiliation,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to update club affiliation',
-      error: error.message,
-    });
-  }
-};
 
 exports.getUserProfile = async (req, res) => {
   try {
@@ -200,42 +178,42 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
-// exports.UpdateProfile = async (req, res) => {
-//   try {
-//     const token = getTokenFromRequest(req);
-//     if (!token) {
-//       return res.status(401).json({ message: 'Not authenticated' });
-//     }
+exports.UpdateProfile = async (req, res) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
 
-//     const decoded = jwt.verify(token, JWT_SECRET);
-//     console.log("Decoded Token:", decoded);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log("Decoded Token:", decoded);
 
     
-//     const userExists = await User.findById(decoded.userId);
-//     console.log("id",decoded.userId)
-//     if (!userExists) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
+    const userExists = await User.findById(decoded.userId);
+    console.log("id",decoded.userId)
+    if (!userExists) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-//     const updatedData = await User.findByIdAndUpdate(
-//       decoded.userId,
-//       { clubAffiliation: req.body.clubAffiliation },
-//       { new: true, runValidators: true }
-//     );
+    const updatedData = await User.findByIdAndUpdate(
+      decoded.userId,
+      { clubAffiliation: req.body.clubAffiliation },
+      { new: true, runValidators: true }
+    );
 
-//     if (!updatedData) {
-//       return res.status(400).json({ message: 'Failed to update profile' });
-//     }
+    if (!updatedData) {
+      return res.status(400).json({ message: 'Failed to update profile' });
+    }
 
-//     console.log("Updated Data:", updatedData);
-//     return res.status(200).json({
-//       message: "Profile changed successfully",
-//       user: updatedData,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       message: 'Failed to update profile',
-//       error: error.message,
-//     });
-//   }
-// };
+    console.log("Updated Data:", updatedData);
+    return res.status(200).json({
+      message: "Profile changed successfully",
+      user: updatedData,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to update profile',
+      error: error.message,
+    });
+  }
+};

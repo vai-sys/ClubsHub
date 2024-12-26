@@ -4,7 +4,7 @@ const { getAllclubs,createClub,addMemberToClub} =require("../Controller/clubCont
 const { auth, authorize } = require('../middleware/authMiddleware');
 
 
-router.get('/',auth,authorize(['student','superAdmin']),getAllclubs);
+router.get('/',getAllclubs);
 
 router.post('/create',auth,authorize(['superAdmin']),createClub)
 router.post('/add-member', auth, authorize(['superAdmin', 'clubAdmin']), addMemberToClub);

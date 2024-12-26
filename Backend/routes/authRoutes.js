@@ -17,7 +17,9 @@ router.post('/login', login);
 
 router.post('/logout', auth, logout);
 router.get('/profile',auth, authorize(['student', 'superAdmin','clubAdmin']), getUserProfile);
-// router.put("/update-profile",auth,authorize([ 'superAdmin','clubAdmin']),UpdateProfile);
+router.put('/update-profile',auth,authorize(['student','superAdmin','clubAdmin']),UpdateProfile);
+
+
 
 router.get(
   '/admin-dashboard',

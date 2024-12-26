@@ -13,28 +13,10 @@ const getTokenFromRequest = (req) => {
   
     return req.cookies.token;
   };
-const getAllclubs = async (req, res) => {
+  const getAllclubs = async (req, res) => {
     try {
-
-      const token = getTokenFromRequest(req);
-      if (!token) {
-        return res.status(401).json({ message: 'Not authenticated' });
-      }
-  
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const user = await User.findById(decoded.userId);
-  
-      if (!user || (user.role !== UserRoles.STUDENT && user.role !== UserRoles.SUPER_ADMIN)) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-  
-     
       const clubs = await Club.find({});
-  
-      res.status(200).json({
-        message: 'Clubs fetched successfully',
-        clubs: clubs,
-      });
+      res.status(200).json(clubs); 
     } catch (error) {
       res.status(500).json({
         message: 'Failed to fetch clubs',

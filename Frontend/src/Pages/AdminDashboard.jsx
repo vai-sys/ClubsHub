@@ -1,9 +1,10 @@
 import React from 'react'
+import Navbar from '../components/Navbar'
 
 const AdminDashboard = () => {
   return (
     <div>
-      welcome to admin dashboard!
+     <Navbar/>
     </div>
   )
 }
