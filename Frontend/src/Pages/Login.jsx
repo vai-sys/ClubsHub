@@ -53,8 +53,8 @@ const Login = () => {
         case 'superAdmin':
           navigate('/superAdmin-dashboard');
           break;
-        case 'student':
-          navigate('/student-dashboard');
+        case 'member':
+          navigate('/member-dashboard');
           break;
         case 'clubAdmin':
           navigate('/admin-dashboard');
@@ -65,6 +65,7 @@ const Login = () => {
       }
     } catch (error) {
       setError(error.response?.data?.message || error.message || 'Authentication failed');
+
       console.error('Auth error:', error);
     } finally {
       setIsLoading(false);

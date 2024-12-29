@@ -1,44 +1,57 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
+// Set axios default once globally, if applicable
+axios.defaults.withCredentials = true;
+
 const Register = () => {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
-    role: 'student',
+    department: '',
+    year: '',
+    role: 'member',
     clubAffiliation: ''
   });
+
   const [clubs, setClubs] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  
-  axios.defaults.withCredentials = true;
-
 
   useEffect(() => {
     const fetchClubs = async () => {
       try {
         const response = await axios.get('http://localhost:3000/api/club');
         setClubs(response.data);
-        
       } catch (error) {
         console.error('Error fetching clubs:', error);
+        setError('Failed to fetch clubs. Please try again later.');
       }
     };
     fetchClubs();
   }, []);
 
-
   const validateForm = () => {
+    if (!formData.name.trim()) {
+      throw new Error('Name is required');
+    }
     if (!formData.email || !formData.email.includes('@')) {
       throw new Error('Please enter a valid email address');
     }
     if (formData.password.length < 6) {
       throw new Error('Password must be at least 6 characters long');
     }
+    if (!formData.department.trim()) {
+      throw new Error('Department is required');
+    }
+    if (!formData.year.trim()) {
+      throw new Error('Year is required');
+    }
+    
+   
   };
 
   const handleSubmit = async (e) => {
@@ -64,6 +77,18 @@ const Register = () => {
       [e.target.id]: e.target.value
     });
   };
+
+  const years = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
+  const departments = [
+    'Computer Science',
+    'Information Technology',
+    'Computer Science and Business System',
+    'Electronic and Telecommunication',
+    'Mechanical',
+    'Civil',
+    'Electrical',
+    'Automation Robotics'
+  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -96,13 +121,28 @@ const Register = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <input
               id="email"
               type="email"
-              placeholder="your.email@university.edu"
+              placeholder=""
               value={formData.email}
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -126,6 +166,46 @@ const Register = () => {
           </div>
 
           <div>
+            <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+              Department
+            </label>
+            <select
+              id="department"
+              value={formData.department}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            >
+              <option value="">Select Department</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+              Year
+            </label>
+            <select
+              id="year"
+              value={formData.year}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            >
+              <option value="">Select Year</option>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
               Role
             </label>
@@ -135,7 +215,7 @@ const Register = () => {
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="student">Student</option>
+              <option value="member">Student Member</option>
               <option value="clubAdmin">Club Admin</option>
               <option value="superAdmin">Super Admin</option>
             </select>

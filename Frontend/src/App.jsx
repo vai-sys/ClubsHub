@@ -7,6 +7,8 @@ import AdminDashboard from './Pages/AdminDashboard';
 import StudentDashboard from './Pages/StudentDashboard';
 import PrivateRoute from './components/PrivateRoute';
 import Profile from './Pages/Profile';
+import Clubs from './Pages/Clubs'
+import ClubDetails from './Pages/ClubDetails';
 
 const App = () => {
   return (
@@ -23,20 +25,26 @@ const App = () => {
               </PrivateRoute>
             }
           />
-          <Route  path='/student-dashboard' 
+          <Route  path='/member-dashboard' 
           element={
-            <PrivateRoute roles={['student']}>
+            <PrivateRoute roles={['member']}>
               <StudentDashboard/>
             </PrivateRoute>
           }
           />
 
           <Route path="/profile" element={
-<PrivateRoute roles={['superAdmin','student','clubAdmin']}>
+<PrivateRoute roles={['superAdmin','member','clubAdmin']}>
 <Profile />
 </PrivateRoute>
 
           } />
+
+          
+<Route path="/clubs" element={<Clubs/>} />
+
+
+<Route path="/club/:id" element={<ClubDetails />} />
         </Routes>
       </Router>
     </AuthProvider>

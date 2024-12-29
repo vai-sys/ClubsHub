@@ -1,42 +1,45 @@
 const mongoose = require("mongoose");
 
 const ClubSchema = new mongoose.Schema({
-    name: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
-    clubLeadId: { 
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', 
-      required: true,
-    },
-    clubLogo: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    clubMembers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', 
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  clubLeadId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  clubLogo: {
+    type: String,  
+    required: true,
+    trim: true,
+  },
+  clubMembers: [
+    {
+      student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      role: {
+        type: String,
+        default: "member",
       },
-    ],
-    createdAt: {
-      type: Date,
-      default: Date.now, 
+      joinedAt: { type: Date, default: Date.now },
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-  });
-  
+  ],
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+});
 
 const Club = mongoose.model('Club', ClubSchema);
 module.exports = Club;

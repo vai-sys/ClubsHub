@@ -1,39 +1,75 @@
 const { JWT_SECRET, JWT_EXPIRATION, UserRoles } = require('../config/constants');
-const Club=require("../models/Club");
+const Club = require("../models/Club");
+const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const User=require('../models/User')
-
 
 const getTokenFromRequest = (req) => {
- 
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      return authHeader.substring(7); 
+        return authHeader.substring(7);
     }
-  
-    return req.cookies.token;
-  };
-  const getAllclubs = async (req, res) => {
+    return req.cookies?.token || null;
+};
+
+const getAllClubs = async (req, res) => {
     try {
-      const clubs = await Club.find({});
-      res.status(200).json(clubs); 
+        const clubs = await Club.find({})
+            .populate('clubLeadId', 'email name role')
+            .populate('clubMembers.student', 'email name role');
+        res.status(200).json(clubs);
     } catch (error) {
-      res.status(500).json({
-        message: 'Failed to fetch clubs',
-        error: error.message,
-      });
+        res.status(500).json({
+            message: 'Failed to fetch clubs',
+            error: error.message,
+        });
     }
-  };
+};
 
-
-  const createClub = async (req, res) => {
+const getClubDetails = async (req, res) => {
     try {
-        const { name, description, clubLeadId, clubLogo } = req.body;
+        const { id } = req.params;
 
-     
-        if (!name || !description || !clubLeadId) {
+        const club = await Club.findById(id)
+            .populate('clubLeadId', 'email name role') 
+            .populate('clubMembers.student', 'email name role'); 
+
+        
+        if (!club) {
+            return res.status(404).json({
+                message: 'Club not found',
+            });
+        }
+
+        res.status(200).json({
+            message: 'Club details fetched successfully',
+            club,
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: 'Error fetching club details',
+            error: error.message,
+        });
+    }
+};
+
+
+
+
+const createClub = async (req, res) => {
+    try {
+        const { name, description, clubLeadId } = req.body;
+        const clubLogo = req.file ? req.file?.path : '/uploads/user.png';
+
+        if (!name || !description || !clubLeadId || !clubLogo) {
             return res.status(400).json({
-                message: 'Missing required fields: name, description, and clubLeadId are required'
+                message: 'Missing required fields: name, description, clubLeadId, and clubLogo are required'
+            });
+        }
+
+        const existingClub = await Club.findOne({ name });
+        if (existingClub) {
+            return res.status(400).json({
+                message: 'A club with this name already exists'
             });
         }
 
@@ -46,19 +82,35 @@ const getTokenFromRequest = (req) => {
             return res.status(403).json({ message: 'Club lead must have the CLUB_ADMIN role' });
         }
 
-        
         const newClub = new Club({
             name,
             description,
-            clubLeadId, 
+            clubLeadId,
             clubLogo,
+            clubMembers: [{
+                student: clubLeadId,
+                role: 'admin',
+                joinedAt: new Date()
+            }]
         });
 
         await newClub.save();
 
+        clubLead.clubAffiliations.push({
+            clubId: newClub._id,
+            clubName: newClub.name,
+            joinedAt: new Date(),
+        });
+
+        await clubLead.save();
+
+        const populatedClub = await Club.findById(newClub._id)
+            .populate('clubLeadId', 'email name role')
+            .populate('clubMembers.student', 'email name role');
+
         res.status(201).json({
             message: 'Club created successfully',
-            club: newClub,
+            club: populatedClub,
         });
     } catch (error) {
         res.status(500).json({
@@ -68,71 +120,82 @@ const getTokenFromRequest = (req) => {
     }
 };
 
-
-
-
-
 const addMemberToClub = async (req, res) => {
-  try {
-      const { clubName, userId } = req.body;
+    try {
+        const { clubId, userId, role = 'member' } = req.body;
 
-      if (!clubName || !userId) {
-          return res.status(400).json({
-              message: 'Club name and user ID are required'
-          });
-      }
+        if (!clubId || !userId) {
+            return res.status(400).json({
+                message: 'Club ID and user ID are required'
+            });
+        }
 
-      
-      const club = await Club.findOne({ 
-          name: clubName,
-          isActive: true 
-      });
-      
-      if (!club) {
-          return res.status(404).json({ message: 'Club not found or inactive' });
-      }
+        if (!['clubAdmin', 'member', 'superAdmin'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid role. Allowed roles are admin and member.' });
+        }
 
-     
-      const user = await User.findOne({ 
-          _id: userId,
-          isActive: true 
-      });
-      
-      if (!user) {
-          return res.status(404).json({ message: 'User not found or inactive' });
-      }
+        const club = await Club.findOne({
+            _id: clubId,
+            isActive: true
+        });
 
-      if (club.clubMembers.includes(userId)) {
-          return res.status(400).json({ message: 'User is already a member of this club' });
-      }
+        if (!club) {
+            return res.status(404).json({ message: 'Club not found or inactive' });
+        }
 
-     
+        const user = await User.findOne({
+            _id: userId,
+            isActive: true
+        });
 
- 
-      club.clubMembers.push(userId);
-      await club.save();
+        if (!user) {
+            return res.status(404).json({ message: 'User not found or inactive' });
+        }
 
-    
-      user.clubAffiliation = clubName;
-      await user.save();
+        const existingMember = club.clubMembers.find(
+            member => member.student.toString() === userId
+        );
 
-     
-      const updatedClub = await Club.findById(club._id)
-          .populate('clubLeadId', 'email role')
-          .populate('clubMembers', 'email role');
+        if (existingMember) {
+            return res.status(400).json({ message: 'User is already a member of this club' });
+        }
 
-      res.status(200).json({
-          message: 'Member added successfully',
-          club: updatedClub
-      });
+        club.clubMembers.push({
+            student: userId,
+            role: role,
+            joinedAt: new Date()
+        });
 
-  } catch (error) {
-      res.status(500).json({
-          message: 'Error adding member to club',
-          error: error.message
-      });
-  }
+        await club.save();
+
+        user.clubAffiliations.push({
+            clubId: club._id,
+            clubName: club.name,
+            joinedAt: new Date(),
+        });
+
+        await user.save();
+
+        const updatedClub = await Club.findById(club._id)
+            .populate('clubLeadId', 'email name role')
+            .populate('clubMembers.student', 'email role');
+
+        res.status(200).json({
+            message: 'Member added successfully',
+            club: updatedClub
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: 'Error adding member to club',
+            error: error.message
+        });
+    }
 };
 
-
-module.exports = { getAllclubs, createClub, addMemberToClub };
+module.exports = {
+    getAllClubs,
+    createClub,
+    addMemberToClub,
+    getClubDetails 
+};

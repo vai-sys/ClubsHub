@@ -1,5 +1,5 @@
 const UserRoles = {
-    STUDENT: 'student',
+    MEMBER: 'member',
     CLUB_ADMIN: 'clubAdmin',
     SUPER_ADMIN: 'superAdmin'
   };

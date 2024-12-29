@@ -4,10 +4,9 @@ const {
   login,
   register,
   logout,
- UpdateProfile,
+  updateProfile, 
   getUserProfile,
-  
-} = require('../Controller/authController');
+} = require('../Controller/authController'); 
 const { auth, authorize } = require('../middleware/authMiddleware');
 
 
@@ -16,18 +15,6 @@ router.post('/login', login);
 
 
 router.post('/logout', auth, logout);
-router.get('/profile',auth, authorize(['student', 'superAdmin','clubAdmin']), getUserProfile);
-router.put('/update-profile',auth,authorize(['student','superAdmin','clubAdmin']),UpdateProfile);
-
-
-
-router.get(
-  '/admin-dashboard',
-  auth,
-  authorize(['superAdmin']),
-  (req, res) => {
-    res.json({ message: 'Welcome to the Admin Dashboard!' });
-  }
-);
-
+router.get('/profile', auth, authorize(['member', 'superAdmin', 'clubAdmin']), getUserProfile);
+router.put('/update-profile', auth, authorize(['member', 'superAdmin', 'clubAdmin']), updateProfile); 
 module.exports = router;

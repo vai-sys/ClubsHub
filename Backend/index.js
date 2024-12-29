@@ -34,7 +34,7 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
+app.use('/uploads', express.static('uploads'));
 app.use(require('cookie-parser')());
 
 app.use('/api/auth', authRoutes);

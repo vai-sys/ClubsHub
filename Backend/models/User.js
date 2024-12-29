@@ -3,6 +3,11 @@ const bcrypt = require('bcryptjs');
 const { UserRoles } = require('../config/constants');
 
 const userSchema = new mongoose.Schema({
+  name: {                             
+    type: String,
+    required: true,
+    trim: true,
+  },
   email: {
     type: String,
     required: true,
@@ -19,12 +24,33 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: Object.values(UserRoles),
-    default: UserRoles.STUDENT,
+    default: UserRoles.MEMBER,
   },
-  clubAffiliation: {
+  clubAffiliations: [{               
+    clubId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+      required: true,
+    },
+    clubName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  department: {
     type: String,
-    trim: true,
-    default: null,  
+    enum: ['Computer Science', 'Information Technology', 'Computer Science and Business System', 'Electronic and Telecommunication', 'Mechanical', 'Civil', 'Electrical', 'Automation Robotics'],
+    required: true, 
+  },
+  year: {
+    type: String, 
+    enum: ['First Year', 'Second Year', 'Third Year', 'Fourth Year'],
+    required: true,
   },
   isActive: {
     type: Boolean,

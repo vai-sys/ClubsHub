@@ -1,22 +1,42 @@
-
 import React, { useEffect, useState } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import { Camera, LogOut, User, Book, Calendar, Shield, Users, Check, X } from 'lucide-react';
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [clubAffiliation, setClubAffiliation] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    department: '',
+    year: ''
+  });
   const navigate = useNavigate();
+
+  const years = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
+  const departments = [
+    'Computer Science',
+    'Information Technology',
+    'Computer Science and Business System',
+    'Electronic and Telecommunication',
+    'Mechanical',
+    'Civil',
+    'Electrical',
+    'Automation Robotics'
+  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await api.get('/auth/profile');
         setProfile(response.data.user);
-        setClubAffiliation(response.data.user.clubAffiliation || '');
+        setFormData({
+          name: response.data.user.name || '',
+          department: response.data.user.department || '',
+          year: response.data.user.year || ''
+        });
       } catch (err) {
         if (err.response?.status === 401) {
           navigate('/login');
@@ -41,10 +61,18 @@ const Profile = () => {
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSave = async () => {
     try {
-      await api.put('/auth/update-profile', { clubAffiliation });
-      setProfile(prev => ({ ...prev, clubAffiliation }));
+      const response = await api.put('/auth/update-profile', formData);
+      setProfile(response.data.user);
       setIsEditing(false);
     } catch (err) {
       setError('Failed to update profile. Please try again.');
@@ -53,15 +81,15 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100">
-        <div className="flex items-center gap-2">
-          <div className="animate-spin h-6 w-6 text-indigo-600">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-purple-100 via-blue-100 to-pink-100">
+        <div className="flex flex-col items-center gap-4 bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
+          <div className="animate-spin h-8 w-8 text-blue-600">
             <svg className="w-full h-full" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
           </div>
-          <span className="text-lg font-medium text-indigo-600">Loading...</span>
+          <span className="text-xl font-medium text-blue-600">Loading your profile...</span>
         </div>
       </div>
     );
@@ -69,9 +97,9 @@ const Profile = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg max-w-md w-full">
-          <p className="font-bold">Error</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-purple-100 via-blue-100 to-pink-100 p-4">
+        <div className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-xl max-w-md w-full shadow-lg">
+          <p className="font-bold text-lg mb-2">Error</p>
           <p>{error}</p>
         </div>
       </div>
@@ -79,79 +107,173 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-100 py-12 px-4">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="text-center p-6">
-          <div className="mx-auto w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">Profile Details</h2>
-        </div>
-        
-        <div className="px-6 pb-6">
-          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-500">Email</label>
-              <p className="text-gray-900 font-medium">{profile?.email}</p>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-500">Role</label>
-              <div className="inline-block bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
-                {profile?.role}
+    <div className="min-h-screen bg-gradient-to-tr from-purple-100 via-blue-100 to-pink-100 py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden">
+          <div className="relative h-48 bg-white">
+            <div className="absolute -bottom-16 left-1/2 -translate-x-1/2">
+              <div className="relative">
+                <div className="w-32 h-32 bg-gradient-to-tr from-pink-500 to-purple-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                  <User className="w-16 h-16 text-white" />
+                </div>
+                <button className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors">
+                  <Camera className="w-5 h-5 text-gray-600" />
+                </button>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-500">Club Affiliation</label>
-              {isEditing ? (
-                <div className="flex gap-2">
+          <div className="mt-20 px-8 pb-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">{profile?.name || 'Welcome!'}</h1>
+              <p className="text-gray-500 mt-2">{profile?.email}</p>
+            </div>
+
+            {isEditing ? (
+              <div className="space-y-6 bg-white/50 rounded-2xl p-6 backdrop-blur-sm">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Name</label>
                   <input
                     type="text"
-                    value={clubAffiliation}
-                    onChange={(e) => setClubAffiliation(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="Enter club affiliation"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Enter your name"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Department</label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((dept) => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Year</label>
+                  <select
+                    name="year"
+                    value={formData.year}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select Year</option>
+                    {years.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-4 pt-4">
                   <button
                     onClick={handleSave}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                   >
-                    Save
+                    <Check className="w-5 h-5" />
+                    Save Changes
                   </button>
                   <button
                     onClick={() => {
                       setIsEditing(false);
-                      setClubAffiliation(profile?.clubAffiliation || '');
+                      setFormData({
+                        name: profile.name || '',
+                        department: profile.department || '',
+                        year: profile.year || ''
+                      });
                     }}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
+                    <X className="w-5 h-5" />
                     Cancel
                   </button>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <p className="text-gray-900 font-medium">{profile?.clubAffiliation || 'None'}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/50 rounded-2xl p-6 backdrop-blur-sm space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Book className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Department</p>
+                      <p className="font-medium text-gray-900">{profile?.department || 'Not set'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Year</p>
+                      <p className="font-medium text-gray-900">{profile?.year || 'Not set'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-gray-500">Role</p>
+                      <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {profile?.role}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/50 rounded-2xl p-6 backdrop-blur-sm space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <div className="flex flex-wrap gap-2 mt-2">
+  {profile?.clubAffiliations?.length > 0 ? (
+    profile.clubAffiliations.map((club, index) => (
+      <span key={club._id} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+        {club.clubName} 
+      </span>
+    ))
+  ) : (
+    <p className="text-gray-500 text-sm">No club affiliations</p>
+  )}
+</div>
+
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${profile?.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div>
+                      <p className="text-sm text-gray-500">Status</p>
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        profile?.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {profile?.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 flex gap-4">
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
                   >
-                    Edit
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-red-200 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Sign Out
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <button
-              onClick={handleLogout}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-            >
-              Sign Out
-            </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
