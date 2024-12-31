@@ -1,7 +1,8 @@
-
-import { useState, useEffect } from "react";
-import { Users, User, ArrowRight, Search, Activity, Sparkles } from "lucide-react";
+import { useState, useEffect, useContext } from "react";
+import { Users, User, ArrowRight, Search, Activity, Sparkles ,AlertCircle} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from '../api.js';
+import { AuthContext } from "../AuthContext.jsx";
 
 const Clubs = () => {
   const [clubs, setClubs] = useState([]);
@@ -9,7 +10,9 @@ const Clubs = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [joinRequestStatus, setJoinRequestStatus] = useState({});
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
   const getAllClubs = async () => {
     setIsLoading(true);
@@ -18,6 +21,7 @@ const Clubs = () => {
         credentials: 'include'
       });
       const data = await response.json();
+      console.log(user)
       setClubs(data);
       setError(null);
     } catch (error) {
@@ -38,6 +42,95 @@ const Clubs = () => {
 
   const handleClubClick = (clubId) => {
     navigate(`/club/${clubId}`);
+  };
+
+  const getUserIdfromMail = async (email) => {
+    try {
+        const response = await api.get('/auth/get-user-details');
+       
+        return response.data?.user._id || null;
+    } catch (error) {
+        console.error("Error fetching user details:", error);
+        return null;
+    }
+};
+
+
+  const handleJoinLogic = async (clubId, event) => {
+    event.stopPropagation(); 
+
+  
+    
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const userId = await getUserIdfromMail(user.email);
+
+
+    try {
+      setJoinRequestStatus(prev => ({
+        ...prev,
+        [clubId]: 'pending'
+      }));
+
+      const response = await api.post(`/club/${clubId}/join-request`, {
+        userId
+      });
+
+      if (response.data.success) {
+        setJoinRequestStatus(prev => ({
+          ...prev,
+          [clubId]: 'success'
+        }));
+      }
+    } catch (error) {
+      console.error('Error sending join request:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to send join request';
+      setJoinRequestStatus(prev => ({
+        ...prev,
+        [clubId]: 'error'
+      }));
+      setError(errorMessage);
+    }
+  };
+
+  const getJoinButtonState = (club) => {
+    const status = joinRequestStatus[club._id];
+    
+    if (status === 'pending') {
+      return {
+        text: 'Sending Request...',
+        disabled: true,
+        className: 'bg-gray-400'
+      };
+    } else if (status === 'success') {
+      return {
+        text: 'Request Sent',
+        disabled: true,
+        className: 'bg-green-500'
+      };
+    } else if (status === 'error') {
+      return {
+        text: 'Try Again',
+        disabled: false,
+        className: 'bg-red-500'
+      };
+    }
+    
+    if (club.clubMembers?.some(member => member._id === user?._id)) {
+      return {
+        text: 'Member',
+        disabled: true,
+        className: 'bg-green-500'
+      };
+    }
+
+    return {
+      text: 'Join Club',
+      disabled: false,
+      className: 'bg-blue-600 hover:bg-blue-700'
+    };
   };
 
   if (isLoading) {
@@ -96,68 +189,70 @@ const Clubs = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredClubs.map((club, index) => (
-              <div
-                key={index}
-                className="group bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer"
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => handleClubClick(club._id)}
-              >
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    src={`http://localhost:3000/${club.clubLogo.replace(/\\/g, '/')}`}
-                    alt={`${club.name} banner`}
-                    className="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-90"></div>
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <h2 className="text-2xl font-bold text-white mb-3">{club.name}</h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center text-white/90 backdrop-blur-sm bg-black/20 px-3 py-1 rounded-full">
-                        <Users className="h-4 w-4 mr-2" />
-                        <span className="text-sm">{club.clubMembers?.length || 0} members</span>
+            {filteredClubs.map((club, index) => {
+              const buttonState = getJoinButtonState(club);
+              
+              return (
+                <div
+                  key={index}
+                  className="group bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer"
+                  onMouseEnter={() => setHoveredCard(index)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  onClick={() => handleClubClick(club._id)}
+                >
+                  <div className="relative h-64 overflow-hidden">
+                    <img
+                      src={`http://localhost:3000/${club.clubLogo.replace(/\\/g, '/')}`}
+                      alt={`${club.name} banner`}
+                      className="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-90"></div>
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <h2 className="text-2xl font-bold text-white mb-3">{club.name}</h2>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center text-white/90 backdrop-blur-sm bg-black/20 px-3 py-1 rounded-full">
+                          <Users className="h-4 w-4 mr-2" />
+                          <span className="text-sm">{club.clubMembers?.length || 0} members</span>
+                        </div>
+                        {club.isActive && (
+                          <span className="px-3 py-1 rounded-full bg-green-500/30 backdrop-blur-sm text-green-400 text-sm font-medium">
+                            Active
+                          </span>
+                        )}
                       </div>
-                      {club.isActive && (
-                        <span className="px-3 py-1 rounded-full bg-green-500/30 backdrop-blur-sm text-green-400 text-sm font-medium">
-                          Active
-                        </span>
-                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-8">
+                    <p className="text-gray-600 mb-8 line-clamp-3 text-lg">
+                      {club.description}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <User className="h-5 w-5" />
+                        <div className="flex flex-col">
+                          <span className="text-gray-400">Club Admin</span>
+                          <span className="font-medium text-gray-700">
+                            {club.clubLeadId?.name || "No lead assigned"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        className={`flex items-center px-6 py-3 text-white rounded-xl transition-all duration-300 transform hover:scale-105 group relative overflow-hidden ${buttonState.className}`}
+                        onClick={(e) => handleJoinLogic(club._id, e)}
+                        disabled={buttonState.disabled}
+                      >
+                        <span className="relative z-10">{buttonState.text}</span>
+                        <ArrowRight className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform relative z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                <div className="p-8">
-                  <p className="text-gray-600 mb-8 line-clamp-3 text-lg">
-                    {club.description}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <User className="h-5 w-5" />
-                      <div className="flex flex-col">
-                        <span className="text-gray-400">Club Admin</span>
-                        <span className="font-medium text-gray-700">
-                          {club.clubLeadId?.name || "No lead assigned"}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <button 
-                      className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 group relative overflow-hidden"
-                      onClick={(e) => {
-                        e.stopPropagation(); 
-                        /* Add your join logic here */
-                      }}
-                    >
-                      <span className="relative z-10">Join Club</span>
-                      <ArrowRight className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform relative z-10" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

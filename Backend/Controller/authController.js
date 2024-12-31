@@ -4,14 +4,13 @@ const bcrypt = require('bcrypt');
 const { JWT_SECRET, JWT_EXPIRATION, UserRoles } = require('../config/constants');
 
 const generateToken = (user) => {
-  return jwt.sign(
-    {
-      userId: user._id,
-      role: user.role,
-    },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRATION }
-  );
+  const payload = {
+    userId: user._id,
+    role: user.role,
+    email: user.email
+  };
+  console.log('Token payload:', payload);  
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
 };
 
 const getTokenFromRequest = (req) => {
@@ -70,6 +69,7 @@ exports.register = async (req, res) => {
 
 
     const token = generateToken(user);
+  
 
     
     res.cookie('token', token, {
@@ -258,5 +258,37 @@ exports.logout = async (req, res) => {
       message: 'Logout failed',
       error: error.message,
     });
+  }
+};
+
+exports.getUserDetails = async (req, res) => {
+  try {
+
+    const token = getTokenFromRequest(req);
+    console.log(token)
+    if (!token) {
+      return res.status(401).json({ message: "Not Authenticated" });
+    }
+
+   
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log(decoded)
+    if (!decoded || !decoded.email) {
+      return res.status(401).json({ message: "Invalid Token" });
+    }
+
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+  
+    res.status(200).json({
+      message: "User details fetched successfully!",
+      user,
+    });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };

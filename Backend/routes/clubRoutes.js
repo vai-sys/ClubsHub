@@ -18,8 +18,8 @@ router.post(
 
 router.post('/add-member', auth, authorize(['superAdmin', 'clubAdmin']), addMemberToClub);
 
-router.post('/:clubId/request',auth,authorize(['member']),sendJoinRequest);
-router.get('/:clubId/request',auth,authorize(['clubAdmin']),getAllrequests);
+router.post('/:clubId/join-request',auth,authorize(['member']),sendJoinRequest);
+router.get('/:clubId/join-request',auth,authorize(['clubAdmin']),getAllrequests);
 router.post('/:clubId/respond',auth,authorize(['clubAdmin']),respondToJoinRequest);
 
 
