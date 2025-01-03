@@ -57,8 +57,13 @@ const getClubDetails = async (req, res) => {
 
 const createClub = async (req, res) => {
     try {
+        console.log(req.body);
+        console.log(req.file); 
+        
         const { name, description, clubLeadId } = req.body;
         const clubLogo = req.file ? req.file?.path : '/uploads/user.png';
+
+
 
         if (!name || !description || !clubLeadId || !clubLogo) {
             return res.status(400).json({
