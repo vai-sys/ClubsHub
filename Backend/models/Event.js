@@ -38,6 +38,10 @@ const EventSchema = new Schema({
     trim: true, 
     default: [] 
   }, 
+
+  fees:{
+    type:Number
+  },
   
   maxParticipants: { 
     type: Number 

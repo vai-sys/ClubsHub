@@ -9,6 +9,9 @@ import PrivateRoute from './components/PrivateRoute';
 import Profile from './Pages/Profile';
 import Clubs from './Pages/Clubs'
 import ClubDetails from './Pages/ClubDetails';
+import Events from './Pages/Events';
+import EventInfo from './Pages/EventInfo'
+
 
 const App = () => {
   return (
@@ -40,13 +43,27 @@ const App = () => {
 
           } />
 
+
+
+
           
 <Route path="/clubs" element={<Clubs/>} />
+
+<Route path="/events" element={<Events/>} />
+
+<Route path="/events/:id" element={<EventInfo/>}/>
 
 
 <Route path="/club/:id" element={<ClubDetails />} />
         </Routes>
+
+
+
+
       </Router>
+
+
+      
     </AuthProvider>
   );
 };
