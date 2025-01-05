@@ -215,7 +215,7 @@ const Register = () => {
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="member">Student Member</option>
+              <option value="member">User</option>
               <option value="clubAdmin">Club Admin</option>
               <option value="superAdmin">Super Admin</option>
             </select>
