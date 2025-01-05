@@ -24,8 +24,8 @@ const EventSchema = new Schema({
   }, 
   
   venue: { 
-    type: String, 
-    required: true 
+    type: String
+   
   }, 
   
   duration: { 
@@ -56,8 +56,7 @@ const EventSchema = new Schema({
   }, 
   
   eventBanner: {
-    type: String,
-    required: [true, 'Event banner image is required']
+    type: String
   }, 
   
   registeredParticipants: [{

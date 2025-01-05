@@ -1,4 +1,3 @@
-
 const User = require("../models/User");
 const Club = require("../models/Club");
 const Event = require("../models/Event");
@@ -29,7 +28,7 @@ const PARTICIPANT_STATUS = {
 };
 
 const validateEventData = (body, files) => {
-    
+   
     if (body.maxParticipants) {
         body.maxParticipants = parseInt(body.maxParticipants, 10);
     }
@@ -38,10 +37,11 @@ const validateEventData = (body, files) => {
         body.duration = parseInt(body.duration, 10);
     }
 
-    if(body.fees){
-        body.fees=parseInt(body.fees,10)
+    if(body.fees) {
+        body.fees = parseInt(body.fees, 10);
     }
 
+   
     const requiredFields = [
         'name', 
         'description', 
@@ -59,18 +59,22 @@ const validateEventData = (body, files) => {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
     }
 
+    
     if (!files?.eventBanner?.[0]?.path) {
         throw new Error("Event banner image is required");
     }
 
+   
     if (!Object.values(EVENT_TYPES).includes(body.eventType)) {
         throw new Error("Invalid event type");
     }
 
+   
     if (!Object.values(EVENT_MODES).includes(body.mode)) {
         throw new Error("Invalid event mode");
     }
 
+  
     const eventDate = new Date(body.date);
     if (isNaN(eventDate.getTime())) {
         throw new Error("Invalid date format");
@@ -83,22 +87,51 @@ const validateEventData = (body, files) => {
         }
     }
 
-   
+  
     if (body.maxParticipants !== undefined) {
         if (isNaN(body.maxParticipants) || !Number.isInteger(body.maxParticipants) || body.maxParticipants <= 0) {
             throw new Error("Maximum participants must be a positive integer");
         }
     }
 
+  
     if (['ONLINE', 'HYBRID'].includes(body.mode) && !body.platformLink) {
         throw new Error("Platform link is required for online/hybrid events");
     }
 
+   
+    let validatedTags = [];
+    if (body.tags) {
+        if (typeof body.tags === 'string') {
+            try {
+                validatedTags = JSON.parse(body.tags);
+            } catch (e) {
+                throw new Error("Invalid tags format");
+            }
+        } else if (Array.isArray(body.tags)) {
+            validatedTags = body.tags;
+        } else {
+            throw new Error("Tags must be an array or a JSON string");
+        }
+
+        if (!Array.isArray(validatedTags)) {
+            throw new Error("Tags must be an array");
+        }
+
+        
+        validatedTags.forEach(tag => {
+            if (typeof tag !== 'string' || tag.trim().length === 0) {
+                throw new Error("Each tag must be a non-empty string");
+            }
+        });
+    }
+
     return {
         eventDate,
+        tags: validatedTags,
         eventBanner: files.eventBanner[0].path,
         attachments: files?.attachments?.map(file => file.path) || [],
-        parsedBody: body 
+        parsedBody: body
     };
 };
 
@@ -115,7 +148,7 @@ const createEvent = async (req, res) => {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        const { eventDate, eventBanner, attachments, parsedBody } = validateEventData(req.body, req.files);
+        const { eventDate, eventBanner, attachments, parsedBody, tags } = validateEventData(req.body, req.files);
 
         const [user, club] = await Promise.all([
             User.findById(decoded.userId),
@@ -142,14 +175,14 @@ const createEvent = async (req, res) => {
         }
 
         const eventData = {
-            ...parsedBody, 
+            ...parsedBody,
             date: eventDate,
             eventBanner,
             createdBy: user._id,
             status: "upcoming",
             attachments,
             registeredParticipants: [],
-            tags: Array.isArray(parsedBody.tags) ? parsedBody.tags : [],
+            tags,
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -174,6 +207,7 @@ const createEvent = async (req, res) => {
         });
     }
 };
+
 
 
 const getEventById = async (req, res) => {

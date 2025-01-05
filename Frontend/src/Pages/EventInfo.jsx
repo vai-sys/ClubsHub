@@ -1,9 +1,8 @@
 
 
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Users, AlertCircle, Link, Tag, Trophy, Monitor, IndianRupee, CalendarClock } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, AlertCircle, Link, Tag, Trophy, Monitor, IndianRupee, CalendarClock, Download } from 'lucide-react';
 import api from '../api';
 
 const EventInfo = () => {
@@ -29,13 +28,14 @@ const EventInfo = () => {
 
   const handleRegister = async () => {
     try {
-    //   await api.post(`/event/${id}/register`)
-    //   const response = await api.get(`/event/${id}`);
-    //   setEvent(response.data.data);
-    console.log("register")
+      console.log("register");
     } catch (err) {
       alert('Registration failed: ' + err.message);
     }
+  };
+
+  const handleDownload = (attachment) => {
+    window.open(`http://localhost:3000/${attachment.replace(/\\/g, '/')}`, '_blank');
   };
 
   if (loading) {
@@ -98,7 +98,6 @@ const EventInfo = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-       
         {event.eventBanner && (
           <div className="mb-6 rounded-xl overflow-hidden shadow-sm">
             <img 
@@ -112,7 +111,7 @@ const EventInfo = () => {
         <div className="bg-white rounded-lg shadow-sm">
           <div className="p-8">
             <div className="flex flex-col gap-8">
-           
+              
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-6">
                   {event.ClubId.clubLogo && (
@@ -169,6 +168,7 @@ const EventInfo = () => {
                 </div>
               </div>
 
+            
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-gray-600">
@@ -205,7 +205,7 @@ const EventInfo = () => {
                     </span>
                   </div>
 
-                  {event.platformLink && (
+                  {event.mode === 'ONLINE' && event.platformLink && (
                     <div className="flex items-center gap-3 text-gray-600">
                       <Link className="h-5 w-5 text-gray-400" />
                       <a href={event.platformLink} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
@@ -222,27 +222,33 @@ const EventInfo = () => {
                 <p className="text-gray-600 leading-relaxed">{event.description}</p>
               </div>
 
+           
+              {event.attachments && event.attachments.length > 0 && (
+                <div className="pt-6 border-t border-gray-100">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-900">Event Attachments</h2>
+                  <div className="space-y-3">
+                    {event.attachments.map((attachment, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleDownload(attachment)}
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        <Download className="h-5 w-5" />
+                        <span>Download Attachment {index + 1}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
              
               <div className="pt-6 border-t border-gray-100">
                 <h2 className="text-xl font-semibold mb-4 text-gray-900">About the Club</h2>
                 <p className="text-gray-600 leading-relaxed">{event.ClubId.description}</p>
               </div>
 
+              
              
-              <div className="pt-6 border-t border-gray-100">
-                <p className="text-sm text-gray-500 mb-2">Event Organizer</p>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-medium">
-                      {event.createdBy.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{event.createdBy.name}</p>
-                    <p className="text-sm text-gray-500">{event.createdBy.email}</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -252,4 +258,3 @@ const EventInfo = () => {
 };
 
 export default EventInfo;
-

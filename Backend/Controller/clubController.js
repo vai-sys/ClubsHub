@@ -25,32 +25,36 @@ const getAllClubs = async (req, res) => {
     }
 };
 
-const getClubDetails = async (req, res) => {
+const getClubDetails= async (req, res) => {
     try {
-        const { id } = req.params;
+        const clubs = await Club.find()
+            .populate('clubLeadId', 'email name role')
+            .populate({
+                path: 'clubMembers.student',
+                select: 'email name role',
+            })
+            .sort({ name: 1 }); 
 
-        const club = await Club.findById(id)
-            .populate('clubLeadId', 'email name role') 
-            .populate('clubMembers.student', 'email name role'); 
-
-        
-        if (!club) {
+        if (!clubs || clubs.length === 0) {
             return res.status(404).json({
-                message: 'Club not found',
+                message: 'No clubs found',
             });
         }
 
         res.status(200).json({
-            message: 'Club details fetched successfully',
-            club,
+            message: 'Clubs fetched and sorted successfully',
+            clubs,
         });
     } catch (error) {
         res.status(500).json({
-            message: 'Error fetching club details',
+            message: 'Error fetching clubs',
             error: error.message,
         });
     }
 };
+
+
+
 
 
 
