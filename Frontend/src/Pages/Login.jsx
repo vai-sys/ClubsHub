@@ -59,6 +59,10 @@ const Login = () => {
         case 'clubAdmin':
           navigate('/admin-dashboard');
           break;
+        case 'facultyCoordinator':
+            navigate('/faculty-dashboard');
+            break;
+
         default:
           navigate('/login');
           setError('Invalid user role');

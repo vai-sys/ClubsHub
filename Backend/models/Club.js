@@ -21,14 +21,26 @@ const ClubSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  facultyCoordinater:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+  ,
   clubMembers: [
     {
-      student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
       role: {
         type: String,
-        default: "member",
+        default: "member", 
       },
-      joinedAt: { type: Date, default: Date.now },
+      joinedAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
   ],
   createdAt: {
@@ -39,6 +51,10 @@ const ClubSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  clubCategory:{
+    type:String,
+    required:true
+  }
 });
 
 const Club = mongoose.model('Club', ClubSchema);

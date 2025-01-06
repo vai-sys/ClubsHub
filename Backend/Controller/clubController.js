@@ -139,7 +139,7 @@ const addMemberToClub = async (req, res) => {
             });
         }
 
-        if (!['clubAdmin', 'member', 'superAdmin'].includes(role)) {
+        if (!['clubAdmin', 'member', 'superAdmin','facultyCoordinator'].includes(role)) {
             return res.status(400).json({ message: 'Invalid role. Allowed roles are admin and member.' });
         }
 

@@ -227,7 +227,7 @@ const getEventById = async (req, res) => {
         const currentTime = new Date();
 
         const event = await Event.findById(id)
-            .populate('ClubId', 'name clubLogo description')
+            .populate('clubId', 'name clubLogo description')
             .populate('createdBy', 'name email');
 
         if (!event) {

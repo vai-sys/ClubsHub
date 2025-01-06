@@ -29,11 +29,11 @@ exports.register = async (req, res) => {
       password, 
       role, 
       department,
-      year
+     
     } = req.body;
 
    
-    if (!name || !email || !password || !department || !year) {
+    if (!name || !email || !password || !department ) {
       return res.status(400).json({ 
         message: 'Missing required fields' 
       });
@@ -60,7 +60,6 @@ exports.register = async (req, res) => {
       password: hashedPassword,
       role: role || UserRoles.MEMBER,
       department,
-      year,
       clubAffiliations: [], 
       isActive: true
     });
@@ -87,7 +86,6 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department,
-        year: user.year,
         clubAffiliations: user.clubAffiliations,
         createdAt: user.createdAt,
       },
@@ -138,7 +136,6 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department,
-        year: user.year,
         clubAffiliations: user.clubAffiliations,
         lastLogin: user.lastLogin,
       },

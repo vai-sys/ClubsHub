@@ -52,6 +52,9 @@ const userSchema = new mongoose.Schema({
     enum: ['First Year', 'Second Year', 'Third Year', 'Fourth Year'],
 
   },
+  image:{
+    type: String
+  },
   isActive: {
     type: Boolean,
     default: true,

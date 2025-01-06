@@ -37,7 +37,7 @@ const App = () => {
           />
 
           <Route path="/profile" element={
-<PrivateRoute roles={['superAdmin','member','clubAdmin']}>
+<PrivateRoute roles={['superAdmin','member','clubAdmin','facultyCoordinator']}>
 <Profile />
 </PrivateRoute>
 

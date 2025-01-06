@@ -194,7 +194,7 @@ const Register = () => {
               value={formData.year}
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
+           
             >
               <option value="">Select Year</option>
               {years.map((year) => (
@@ -218,7 +218,7 @@ const Register = () => {
               <option value="member">User</option>
               <option value="clubAdmin">Club Admin</option>
               <option value="superAdmin">Super Admin</option>
-              <option value=''> </option>
+              <option value='facultyCoordinator'> Faculty Coordinater</option>
             </select>
           </div>
 

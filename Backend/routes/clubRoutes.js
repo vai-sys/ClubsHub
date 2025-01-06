@@ -33,7 +33,7 @@ router.post(
 router.post(
     '/add-member', 
     auth, 
-    authorize(['superAdmin', 'clubAdmin']), 
+    authorize([ 'clubAdmin']), 
     addMemberToClub
 );
 
