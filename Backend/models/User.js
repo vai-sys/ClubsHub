@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema({
   year: {
     type: String, 
     enum: ['First Year', 'Second Year', 'Third Year', 'Fourth Year'],
-    required: true,
+
   },
   isActive: {
     type: Boolean,

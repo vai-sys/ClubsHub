@@ -73,6 +73,7 @@ const EventSchema = new Schema({
       enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'ATTENDED'],
       default: 'PENDING'
     }
+    
   }], 
   
   eventType: {
