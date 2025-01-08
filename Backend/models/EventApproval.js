@@ -15,14 +15,14 @@ const eventApprovalSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  approvalStatus: {
+  approvalStatusRole: {
     type: String,
     enum: ['approved', 'rejected'],
     required: true,
   },
   role: {
     type: String,
-    enum: ['superAdmin', 'faculty'],
+    enum: ['facultyCoordinator', 'superAdmin'],
     required: true,
   },
 });

@@ -11,6 +11,8 @@ import Clubs from './Pages/Clubs'
 import ClubDetails from './Pages/ClubDetails';
 import Events from './Pages/Events';
 import EventInfo from './Pages/EventInfo'
+import SuperAdminDashboard from './Pages/SuperAdminDashboard';
+import FacultyDashboard from './Pages/FacultyDashboard';
 
 
 const App = () => {
@@ -21,7 +23,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Register />} />
           <Route
-            path="/admin-dashboard"
+            path="/clubAdmin-dashboard"
             element={
               <PrivateRoute roles={['clubAdmin']}>
                 <AdminDashboard />
@@ -35,6 +37,21 @@ const App = () => {
             </PrivateRoute>
           }
           />
+           <Route  path='/superAdmin-dashboard' 
+          element={
+            <PrivateRoute roles={['superAdmin']}>
+              <SuperAdminDashboard/>
+            </PrivateRoute>
+          }
+          />
+           <Route  path='/faculty-coordinater-dashboard' 
+          element={
+            <PrivateRoute roles={['facultyCoordinator']}>
+               <FacultyDashboard/>
+            </PrivateRoute>
+          }
+          />
+
 
           <Route path="/profile" element={
 <PrivateRoute roles={['superAdmin','member','clubAdmin','facultyCoordinator']}>
@@ -69,3 +86,5 @@ const App = () => {
 };
 
 export default App;
+
+

@@ -14,8 +14,9 @@ const getTokenFromRequest = (req) => {
 const getAllClubs = async (req, res) => {
     try {
         const clubs = await Club.find({})
-            .populate('clubLeadId', 'email name role')
-            .populate('clubMembers.student', 'email name role');
+        .populate({ path: 'clubLeadId', select: 'email name role department' })
+        .populate({ path: 'facultyCoordinater', select: 'name email department' })
+        .populate({ path: 'clubMembers.student', select: 'email name role department' })
         res.status(200).json(clubs);
     } catch (error) {
         res.status(500).json({
@@ -25,28 +26,32 @@ const getAllClubs = async (req, res) => {
     }
 };
 
-const getClubDetails= async (req, res) => {
+
+
+const getClubDetails = async (req, res) => {
     try {
         const clubs = await Club.find()
-            .populate('clubLeadId', 'email name role')
-            .populate({
-                path: 'clubMembers.student',
-                select: 'email name role',
-            })
-            .sort({ name: 1 }); 
+            .populate({ path: 'clubLeadId', select: 'email name role department' })
+            .populate({ path: 'facultyCoordinater', select: 'name email department' })
+            .populate({ path: 'clubMembers.student', select: 'email name role department' })
+            .sort({ name: 1 });
 
         if (!clubs || clubs.length === 0) {
             return res.status(404).json({
+                success: false,
                 message: 'No clubs found',
             });
         }
 
-        res.status(200).json({
-            message: 'Clubs fetched and sorted successfully',
-            clubs,
+        return res.status(200).json({
+            success: true,
+            message: 'Clubs fetched successfully',
+            data: clubs,
         });
     } catch (error) {
-        res.status(500).json({
+        console.error('Error in getClubDetails:', error);
+        return res.status(500).json({
+            success: false,
             message: 'Error fetching clubs',
             error: error.message,
         });
@@ -56,39 +61,60 @@ const getClubDetails= async (req, res) => {
 
 
 
-
-
-
 const createClub = async (req, res) => {
     try {
-        console.log(req.body);
-        console.log(req.file); 
+        const { 
+            name, 
+            description, 
+            clubLeadId, 
+            facultyCoordinater,
+            clubCategory 
+        } = req.body;
         
-        const { name, description, clubLeadId } = req.body;
-        const clubLogo = req.file ? req.file?.path : '/uploads/user.png';
+        const clubLogo = req.file?.path || '/uploads/user.png';
 
-
-
-        if (!name || !description || !clubLeadId || !clubLogo) {
+        if (!name || !description || !clubLeadId || !facultyCoordinater || !clubCategory) {
             return res.status(400).json({
-                message: 'Missing required fields: name, description, clubLeadId, and clubLogo are required'
+                message: 'Missing required fields: name, description, clubLeadId, facultyCoordinater, and clubCategory are required'
             });
         }
 
-        const existingClub = await Club.findOne({ name });
+        const [existingClub, clubLead, facultyMember] = await Promise.all([
+            Club.findOne({ name }),
+            User.findById(clubLeadId),
+            User.findById(facultyCoordinater)
+        ]);
+
         if (existingClub) {
             return res.status(400).json({
                 message: 'A club with this name already exists'
             });
         }
 
-        const clubLead = await User.findById(clubLeadId);
-        if (!clubLead) {
-            return res.status(404).json({ message: 'Club lead not found' });
+        if (!clubLead || !facultyMember) {
+            return res.status(404).json({
+                message: !clubLead ? 'Club lead not found' : 'Faculty coordinator not found'
+            });
         }
 
         if (clubLead.role !== UserRoles.CLUB_ADMIN) {
-            return res.status(403).json({ message: 'Club lead must have the CLUB_ADMIN role' });
+            return res.status(403).json({
+                message: 'Club lead must have the CLUB_ADMIN role'
+            });
+        }
+
+        if (facultyMember.role !== UserRoles.FACULTY_COORDINATOR) {
+            return res.status(403).json({
+                message: 'Faculty coordinator must have FACULTY role'
+            });
+        }
+
+      
+        if (clubLead.clubAffiliations.some(affiliation => affiliation.clubName === name) ||
+            facultyMember.clubAffiliations.some(affiliation => affiliation.clubName === name)) {
+            return res.status(400).json({
+                message: 'User already affiliated with a club of this name'
+            });
         }
 
         const newClub = new Club({
@@ -96,35 +122,47 @@ const createClub = async (req, res) => {
             description,
             clubLeadId,
             clubLogo,
+            facultyCoordinater,
+            clubCategory,
             clubMembers: [{
                 student: clubLeadId,
                 role: 'admin',
                 joinedAt: new Date()
-            }]
+            }],
+            isActive: true,
+            createdAt: new Date()
         });
 
         await newClub.save();
-
-        clubLead.clubAffiliations.push({
+        
+        const newAffiliation = {
             clubId: newClub._id,
             clubName: newClub.name,
-            joinedAt: new Date(),
-        });
+            joinedAt: new Date()
+        };
 
-        await clubLead.save();
+        clubLead.clubAffiliations.push(newAffiliation);
+        facultyMember.clubAffiliations.push(newAffiliation);
+
+        await Promise.all([
+            clubLead.save(),
+            facultyMember.save()
+        ]);
 
         const populatedClub = await Club.findById(newClub._id)
             .populate('clubLeadId', 'email name role')
+            .populate('facultyCoordinater', 'email name role')
             .populate('clubMembers.student', 'email name role');
 
         res.status(201).json({
             message: 'Club created successfully',
-            club: populatedClub,
+            club: populatedClub
         });
+
     } catch (error) {
         res.status(500).json({
             message: 'Error creating club',
-            error: error.message,
+            error: error.message
         });
     }
 };

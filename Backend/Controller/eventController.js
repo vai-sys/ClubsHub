@@ -1,335 +1,760 @@
-const User = require("../models/User");
-const Club = require("../models/Club");
-const Event = require("../models/Event");
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../config/constants");
+const Event = require('../models/Event');
+const User = require('../models/User');
+const EventApproval = require('../models/EventApproval');
+const jwt=require("jsonwebtoken")
+const {JWT_SECRET} =require('../config/constants')
+const Club =require('../models/Club')
+const { ApprovalStatus, UserRoles, ApprovalRoles } = require('../config/constants');
 
-const EVENT_TYPES = {
-    WORKSHOP: 'WORKSHOP',
-    SEMINAR: 'SEMINAR',
-    COMPETITION: 'COMPETITION',
-    MEETUP: 'MEETUP',
-    CULTURAL: 'CULTURAL',
-    TECHNICAL: 'TECHNICAL',
-    OTHER: 'OTHER'
-};
-
-const EVENT_MODES = {
-    ONLINE: 'ONLINE',
-    OFFLINE: 'OFFLINE',
-    HYBRID: 'HYBRID'
-};
-
-const PARTICIPANT_STATUS = {
-    PENDING: 'PENDING',
-    CONFIRMED: 'CONFIRMED',
-    CANCELLED: 'CANCELLED',
-    ATTENDED: 'ATTENDED'
-};
-
-const validateEventData = (body, files) => {
-   
-    if (body.maxParticipants) {
-        body.maxParticipants = parseInt(body.maxParticipants, 10);
-    }
-    
-    if (body.duration) {
-        body.duration = parseInt(body.duration, 10);
-    }
-
-    if(body.fees) {
-        body.fees = parseInt(body.fees, 10);
-    }
-
-   
-    const requiredFields = [
-        'name', 
-        'description', 
-        'ClubId', 
-        'date', 
-        'venue', 
-        'duration', 
-        'eventType', 
-        'mode'
-    ];
-    
-    const missingFields = requiredFields.filter(field => !body[field]);
-
-    if (missingFields.length > 0) {
-        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-    }
-
-    
-    if (!files?.eventBanner?.[0]?.path) {
-        throw new Error("Event banner image is required");
-    }
-
-   
-    if (!Object.values(EVENT_TYPES).includes(body.eventType)) {
-        throw new Error("Invalid event type");
-    }
-
-   
-    if (!Object.values(EVENT_MODES).includes(body.mode)) {
-        throw new Error("Invalid event mode");
-    }
-
-  
-    const eventDate = new Date(body.date);
-    if (isNaN(eventDate.getTime())) {
-        throw new Error("Invalid date format");
-    }
-
-    if (body.registrationDeadline) {
-        const deadlineDate = new Date(body.registrationDeadline);
-        if (isNaN(deadlineDate.getTime()) || deadlineDate >= eventDate) {
-            throw new Error("Invalid registration deadline; it must be before the event date");
+const createEvent = async (req, res) => {
+    try {
+     
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid or missing Authorization header' 
+            });
         }
-    }
-
-  
-    if (body.maxParticipants !== undefined) {
-        if (isNaN(body.maxParticipants) || !Number.isInteger(body.maxParticipants) || body.maxParticipants <= 0) {
-            throw new Error("Maximum participants must be a positive integer");
+        
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Token missing' 
+            });
         }
-    }
 
-  
-    if (['ONLINE', 'HYBRID'].includes(body.mode) && !body.platformLink) {
-        throw new Error("Platform link is required for online/hybrid events");
-    }
+    
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+        
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+       
+        if (user.role !== UserRoles.CLUB_ADMIN) {
+            return res.status(403).json({ 
+                success: false,
+                message: 'Only club admins can create events' 
+            });
+        }
+
+       
+        const { clubId, ...eventDetails } = req.body;
+        if (!clubId) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Club ID is required to create an event' 
+            });
+        }
+
+        const club = await Club.findById(clubId);
+        if (!club) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Club not found' 
+            });
+        }
 
    
-    let validatedTags = [];
-    if (body.tags) {
-        if (typeof body.tags === 'string') {
-            try {
-                validatedTags = JSON.parse(body.tags);
-            } catch (e) {
-                throw new Error("Invalid tags format");
+        if (club.clubLeadId.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not authorized to create events for this club'
+            });
+        }
+
+      
+        const eventData = {
+            ...eventDetails,
+            clubId,
+            createdBy: userId,
+            approvalStatus: 'PENDING',
+            facultyApproval: {
+                approved: false,
+                timestamp: null,
+                comments: null
+            },
+            superAdminApproval: {
+                approved: false,
+                timestamp: null,
+                comments: null
             }
-        } else if (Array.isArray(body.tags)) {
-            validatedTags = body.tags;
-        } else {
-            throw new Error("Tags must be an array or a JSON string");
+        };
+
+       
+        if (req.files) {
+            if (req.files.eventBanner?.[0]) {
+                eventData.eventBanner = req.files.eventBanner[0].path;
+            }
+            console.log(eventData.eventBanner)
+            
+            if (req.files && req.files.attachments) {            
+                 eventData.attachments = req.files.attachments.map(file => file.path);
+         }          
         }
 
-        if (!Array.isArray(validatedTags)) {
-            throw new Error("Tags must be an array");
+       
+        const event = await Event.create(eventData);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Event created and pending faculty approval',
+            data: event
+        });
+
+    } catch (error) {
+        console.error('Event creation error:', error);
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: Object.values(error.errors).map(err => err.message)
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Error creating event',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+};
+
+
+
+const facultyApproval = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { approved, remark } = req.body;
+
+     
+        if (!eventId || typeof approved !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: 'Event ID and approval status are required'
+            });
+        }
+
+   
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or missing Authorization header'
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: 'Token missing'
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+
+   
+        const user = await User.findById(userId);
+        if (!user || user.role !== UserRoles.FACULTY_COORDINATOR) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only faculty coordinators can approve events'
+            });
+        }
+
+       
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        if (event.approvalStatus !== 'PENDING') {
+            return res.status(400).json({
+                success: false,
+                message: `Event cannot be approved/rejected in ${event.approvalStatus} state`
+            });
+        }
+
+  
+        const club = await Club.findById(event.clubId);
+        if (!club) {
+            return res.status(404).json({
+                success: false,
+                message: 'Club not found'
+            });
+        }
+
+        if (club.facultyCoordinater.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not authorized to approve events for this club'
+            });
+        }
+
+     
+        const updateData = {
+            'facultyApproval.approved': approved,
+            'facultyApproval.remark': remark || '',
+            'facultyApproval.approvedBy': userId,
+            'facultyApproval.approvedAt': new Date(),
+            approvalStatus: approved ? 'FACULTY_APPROVED' : 'REJECTED'
+        };
+
+   
+        const updatedEvent = await Event.findByIdAndUpdate(
+            eventId,
+            { $set: updateData },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate([
+            { path: 'createdBy', select: 'name email' },
+            { path: 'clubId', select: 'name' },
+            { path: 'facultyApproval.approvedBy', select: 'name email' }
+        ]);
+
+      
+        await EventApproval.create({
+            eventId,
+            approvedBy: userId,
+            approvalStatusRole: approved ? 'approved' : 'rejected',
+            role: 'facultyCoordinator'
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: approved
+                ? 'Event approved and pending super admin approval'
+                : 'Event rejected by faculty coordinator',
+            data: updatedEvent
+        });
+
+    } catch (error) {
+        console.error('Faculty approval error:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: Object.values(error.errors).map(err => err.message)
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Error processing faculty approval',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+};
+
+
+const superAdminApproval = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { approved, remark } = req.body;
+
+       
+        if (!eventId || typeof approved !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: 'Event ID and approval status are required'
+            });
+        }
+
+       
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or missing Authorization header'
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: 'Token missing'
+            });
+        }
+
+       
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+
+       
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        if (user.role !== UserRoles.SUPER_ADMIN) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only super admins can perform final approval'
+            });
         }
 
         
-        validatedTags.forEach(tag => {
-            if (typeof tag !== 'string' || tag.trim().length === 0) {
-                throw new Error("Each tag must be a non-empty string");
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+     
+        const validTransitions = {
+            'FACULTY_APPROVED': true,
+            'PENDING': false,
+            'SUPER_ADMIN_APPROVED': false,
+            'REJECTED': false
+        };
+
+        if (!validTransitions[event.approvalStatus]) {
+            let message = 'Event cannot be processed - ';
+            switch (event.approvalStatus) {
+                case 'PENDING':
+                    message += 'it needs faculty approval first';
+                    break;
+                case 'SUPER_ADMIN_APPROVED':
+                    message += 'it has already been approved by super admin';
+                    break;
+                case 'REJECTED':
+                    message += 'it has already been rejected';
+                    break;
+                default:
+                    message += `invalid status: ${event.approvalStatus}`;
             }
+            
+            return res.status(400).json({
+                success: false,
+                message
+            });
+        }
+
+       
+        const updateData = {
+            'superAdminApproval.approved': approved,
+            'superAdminApproval.remark': remark || '',
+            'superAdminApproval.approvedBy': userId,
+            'superAdminApproval.approvedAt': new Date(),
+            approvalStatus: approved ? 'SUPER_ADMIN_APPROVED' : 'REJECTED'
+        };
+
+      
+        const updatedEvent = await Event.findByIdAndUpdate(
+            eventId,
+            { $set: updateData },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate([
+            { path: 'createdBy', select: 'name email' },
+            { path: 'clubId', select: 'name' },
+            { path: 'facultyApproval.approvedBy', select: 'name email' },
+            { path: 'superAdminApproval.approvedBy', select: 'name email' }
+        ]);
+
+        
+        await EventApproval.create({
+            eventId,
+            approvedBy: userId,
+            approvalStatusRole: approved ? 'approved' : 'rejected',
+            role: 'superAdmin'
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: approved 
+                ? 'Event has been fully approved' 
+                : 'Event rejected by super admin',
+            data: updatedEvent
+        });
+
+    } catch (error) {
+        console.error('Super admin approval error:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: Object.values(error.errors).map(err => err.message)
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Error processing super admin approval',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
-
-    return {
-        eventDate,
-        tags: validatedTags,
-        eventBanner: files.eventBanner[0].path,
-        attachments: files?.attachments?.map(file => file.path) || [],
-        parsedBody: body
-    };
 };
 
-const createEvent = async (req, res) => {
+const getFacultyApprovedEvents = async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({ 
                 success: false,
-                message: "Authorization header missing or invalid format"
+                message: 'Invalid or missing Authorization header' 
             });
         }
-
+        
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
 
-        const { eventDate, eventBanner, attachments, parsedBody, tags } = validateEventData(req.body, req.files);
-
-        const [user, club] = await Promise.all([
-            User.findById(decoded.userId),
-            Club.findById(parsedBody.ClubId)
-        ]);
-
-        if (!user || !club) {
-            return res.status(404).json({
-                success: false,
-                message: !user ? "User not found" : "Club not found"
-            });
-        }
-
-        const clubMember = club.clubMembers.find(member => 
-            member.student.toString() === user._id.toString() && 
-            member.role === 'admin'
-        );
-
-        if (!clubMember) {
+        const user = await User.findById(userId);
+        if (!user || user.role !== UserRoles.SUPER_ADMIN) {
             return res.status(403).json({
                 success: false,
-                message: "Only club admins can create events"
+                message: 'Access denied. Only super admins can view these events'
             });
         }
 
-        const eventData = {
-            ...parsedBody,
-            date: eventDate,
-            eventBanner,
-            createdBy: user._id,
-            status: "upcoming",
-            attachments,
-            registeredParticipants: [],
-            tags,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-
-        const event = new Event(eventData);
-        await event.save();
-
-        return res.status(201).json({
-            success: true,
-            message: "Event created successfully",
-            data: event
-        });
-
-    } catch (error) {
-        console.error("Error in createEvent:", error);
-
-        const statusCode = error.name === 'ValidationError' ? 400 : 500;
-        return res.status(statusCode).json({
-            success: false,
-            message: statusCode === 400 ? error.message : "Internal server error",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-    }
-};
-
-
-
-const getEventById = async (req, res) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                message: "Authentication required"
-            });
-        }
-
-        const token = authHeader.split(' ')[1];
-        await jwt.verify(token, JWT_SECRET);
-
-        const { id } = req.params;
-        const currentTime = new Date();
-
-        const event = await Event.findById(id)
-            .populate('clubId', 'name clubLogo description')
-            .populate('createdBy', 'name email');
-
-        if (!event) {
-            return res.status(404).json({
-                success: false,
-                message: "Event not found"
-            });
-        }
-
-        const calculateEventStatus = (event, currentTime) => {
-            const eventStart = new Date(event.date);
-            const eventEnd = new Date(event.date.getTime() + event.duration * 60 * 60 * 1000); 
-        
-            let status;
-            if (currentTime < eventStart) {
-                status = "upcoming";
-            } else if (currentTime >= eventStart && currentTime <= eventEnd) {
-                status = "ongoing";
-            } else if (currentTime > eventEnd) {
-                status = "completed";
-            }
-            return status;
-        };
-        
-
-        const updatedEvent = {
-            ...event.toObject(),
-            status: calculateEventStatus(event, currentTime)
-        };
+        const events = await Event.find({
+            approvalStatus: 'FACULTY_APPROVED',
+            'facultyApproval.approved': true
+        }).populate([
+            { path: 'clubId', select: 'name' },
+            { path: 'createdBy', select: 'name email' },
+            { path: 'facultyApproval.approvedBy', select: 'name email' },
+            { path: 'registeredParticipants.userId', select: 'name email' }
+        ]);
 
         return res.status(200).json({
             success: true,
-            data: updatedEvent
+            count: events.length,
+            data: events
         });
     } catch (error) {
-        console.error("Error in getEventById:", error);
+        console.error('Error fetching faculty approved events:', error);
         return res.status(500).json({
             success: false,
-            message: "Internal server error",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Error fetching faculty approved events',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
 };
 
-const getEvents = async (req, res) => {
+// Get pending events for faculty coordinator
+const getPendingEventsForFaculty = async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({
+            return res.status(401).json({ 
                 success: false,
-                message: "Authentication required"
+                message: 'Invalid or missing Authorization header' 
+            });
+        }
+        
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+
+        const user = await User.findById(userId);
+        if (!user || user.role !== UserRoles.FACULTY_COORDINATOR) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Only faculty coordinators can view these events'
             });
         }
 
-        const token = authHeader.split(' ')[1];
-        await jwt.verify(token, JWT_SECRET);
+        // Get clubs where this faculty is coordinator
+        const clubs = await Club.find({ facultyCoordinater: userId });
+        const clubIds = clubs.map(club => club._id);
 
-        const currentTime = new Date();
+        const events = await Event.find({
+            clubId: { $in: clubIds },
+            approvalStatus: 'PENDING',
+            'facultyApproval.approved': false
+        }).populate([
+            { path: 'clubId', select: 'name' },
+            { path: 'createdBy', select: 'name email' },
+            { path: 'registeredParticipants.userId', select: 'name email' }
+        ]).sort({ createdAt: -1 });
 
-        const events = await Event.find()
-            .populate('ClubId', 'name clubLogo description')
-            .populate('createdBy', 'name email')
+        return res.status(200).json({
+            success: true,
+            count: events.length,
+            data: events
+        });
+    } catch (error) {
+        console.error('Error fetching pending events for faculty:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching pending events',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+};
+
+// Get approved events (visible to all)
+const getApprovedEvents = async (req, res) => {
+    try {
+      
+        const { 
+            eventType, 
+            mode, 
+            status, 
+            department, 
+            clubId,
+            startDate,
+            endDate 
+        } = req.query;
+
+        const filter = {
+            approvalStatus: 'SUPER_ADMIN_APPROVED',
+            'superAdminApproval.approved': true
+        };
+
+        if (eventType) filter.eventType = eventType;
+        if (mode) filter.mode = mode;
+        if (status) filter.status = status;
+        if (department) filter.departmentsAllowed = department;
+        if (clubId) filter.clubId = clubId;
+        
+        // Date range filter
+        if (startDate || endDate) {
+            filter.date = {};
+            if (startDate) filter.date.$gte = new Date(startDate);
+            if (endDate) filter.date.$lte = new Date(endDate);
+        }
+
+        const events = await Event.find(filter)
+            .populate([
+                { path: 'clubId', select: 'name clubLogo' },
+                { path: 'createdBy', select: 'name email' },
+                { path: 'registeredParticipants.userId', select: 'name email' }
+            ])
             .sort({ date: 1 });
 
-    
-        const updatedEvents = events.map(event => {
-            const eventStart = new Date(event.date);
-            const eventEnd = new Date(event.date.getTime() + event.duration * 60 * 60 * 1000); // duration in hours
-
-            let status;
-            if (currentTime < eventStart) {
-                status = "upcoming";
-            } else if (currentTime >= eventStart && currentTime <= eventEnd) {
-                status = "ongoing";
-            } else if (currentTime > eventEnd) {
-                status = "completed";
-            }
-
-           
-            return { ...event.toObject(), status };
-        });
-
         return res.status(200).json({
             success: true,
-            data: updatedEvents
+            count: events.length,
+            data: events
         });
     } catch (error) {
-        console.error("Error in getEvents:", error);
+        console.error('Error fetching approved events:', error);
         return res.status(500).json({
             success: false,
-            message: "Internal server error",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Error fetching approved events',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
 };
 
+const trackEventProgress = async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid or missing Authorization header' 
+            });
+        }
+        
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
 
-module.exports = { 
-    createEvent,
-    EVENT_TYPES,
-    EVENT_MODES,
-    PARTICIPANT_STATUS,
-    getEvents,
-    getEventById
+        const user = await User.findById(userId);
+        if (!user || user.role !== UserRoles.CLUB_ADMIN) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Only club admins can track their events'
+            });
+        }
+
+        // Get all events created by this club admin
+        const events = await Event.find({
+            createdBy: userId
+        }).populate([
+            { path: 'clubId', select: 'name' },
+            { path: 'facultyApproval.approvedBy', select: 'name email' },
+            { path: 'superAdminApproval.approvedBy', select: 'name email' },
+            { path: 'createdBy', select: 'name email' }
+        ]);
+
+        // Get approval history
+        const approvalHistory = await EventApproval.find({
+            eventId: { $in: events.map(event => event._id) }
+        }).populate('approvedBy', 'name email role');
+
+        // Format the progress data with explicit rejection handling
+        const eventsWithProgress = events.map(event => {
+            const eventApprovals = approvalHistory.filter(
+                approval => approval.eventId.toString() === event._id.toString()
+            );
+
+            // Determine rejection details
+            const rejectedByFaculty = event.approvalStatus === 'REJECTED' && !event.facultyApproval.approved;
+            const rejectedBySuperAdmin = event.approvalStatus === 'REJECTED' && event.facultyApproval.approved;
+
+            return {
+                _id: event._id,
+                name: event.name,
+                description: event.description,
+                eventType: event.eventType,
+                mode: event.mode,
+                date: event.date,
+                venue: event.venue,
+                status: event.status,
+                approvalStatus: event.approvalStatus,
+                club: event.clubId,
+                createdAt: event.createdAt,
+                createdBy: event.createdBy,
+                registeredParticipants: event.registeredParticipants?.length || 0,
+                currentStatus: {
+                    isRejected: event.approvalStatus === 'REJECTED',
+                    rejectedBy: rejectedByFaculty ? 'Faculty Coordinator' : 
+                               rejectedBySuperAdmin ? 'Super Admin' : null,
+                    rejectionRemark: rejectedByFaculty ? event.facultyApproval.remark :
+                                    rejectedBySuperAdmin ? event.superAdminApproval.remark : null,
+                    rejectionDate: rejectedByFaculty ? event.facultyApproval.approvedAt :
+                                 rejectedBySuperAdmin ? event.superAdminApproval.approvedAt : null
+                },
+                progress: {
+                    created: {
+                        completed: true,
+                        date: event.createdAt,
+                        by: event.createdBy
+                    },
+                    facultyApproval: {
+                        status: rejectedByFaculty ? 'REJECTED' : 
+                                event.approvalStatus === 'PENDING' ? 'PENDING' :
+                                'APPROVED',
+                        completed: event.approvalStatus !== 'PENDING',
+                        date: event.facultyApproval.approvedAt,
+                        remark: event.facultyApproval.remark,
+                        approved: event.facultyApproval.approved,
+                        approver: event.facultyApproval.approvedBy
+                    },
+                    superAdminApproval: {
+                        status: rejectedBySuperAdmin ? 'REJECTED' :
+                                event.approvalStatus === 'SUPER_ADMIN_APPROVED' ? 'APPROVED' :
+                                event.approvalStatus === 'FACULTY_APPROVED' ? 'PENDING' :
+                                'NOT_APPLICABLE',
+                        completed: ['SUPER_ADMIN_APPROVED', 'REJECTED'].includes(event.approvalStatus) && event.facultyApproval.approved,
+                        date: event.superAdminApproval.approvedAt,
+                        remark: event.superAdminApproval.remark,
+                        approved: event.superAdminApproval.approved,
+                        approver: event.superAdminApproval.approvedBy
+                    }
+                },
+                approvalHistory: eventApprovals.map(approval => ({
+                    role: approval.role,
+                    status: approval.approvalStatusRole,
+                    approver: approval.approvedBy,
+                    date: approval.approvedAt
+                }))
+            };
+        });
+
+        // Categorize events
+        const categorizedEvents = {
+            pending: eventsWithProgress.filter(event => event.approvalStatus === 'PENDING'),
+            facultyApproved: eventsWithProgress.filter(event => event.approvalStatus === 'FACULTY_APPROVED'),
+            superAdminApproved: eventsWithProgress.filter(event => event.approvalStatus === 'SUPER_ADMIN_APPROVED'),
+            rejected: eventsWithProgress.filter(event => event.approvalStatus === 'REJECTED'),
+        };
+
+        return res.status(200).json({
+            success: true,
+            count: {
+                total: eventsWithProgress.length,
+                pending: categorizedEvents.pending.length,
+                facultyApproved: categorizedEvents.facultyApproved.length,
+                superAdminApproved: categorizedEvents.superAdminApproved.length,
+                rejected: categorizedEvents.rejected.length
+            },
+            data: {
+                all: eventsWithProgress,
+                categorized: categorizedEvents
+            }
+        });
+    } catch (error) {
+        console.error('Error tracking event progress:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error tracking event progress',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
 };
+
+module.exports = {
+    createEvent,
+    facultyApproval,
+    superAdminApproval,
+    getFacultyApprovedEvents,
+    getPendingEventsForFaculty,
+    getApprovedEvents,
+    trackEventProgress,
+    
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

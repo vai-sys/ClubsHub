@@ -1,6 +1,5 @@
 
 
-
 import { useState, useEffect, useContext } from "react";
 import { Users, User, ArrowRight, Search, Activity, Sparkles, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -17,9 +16,12 @@ const Clubs = () => {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [joinRequestStatus, setJoinRequestStatus] = useState({});
   const [buttonStates, setButtonStates] = useState({});
+  
 
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+
+
 
   const getAllClubs = async () => {
     setIsLoading(true);
@@ -28,7 +30,10 @@ const Clubs = () => {
         credentials: 'include'
       });
       const data = await response.json();
+      console.log(data)
       setClubs(data);
+      
+     
     } catch (error) {
       console.error("Error fetching clubs:", error);
       toast.error("Failed to load clubs. Please try again later.");
@@ -51,48 +56,7 @@ const Clubs = () => {
     getAllClubs();
   }, []);
 
-  useEffect(() => {
-    const updateButtonStates = async () => {
-      if (!user || !clubs.length) return;
-
-      const userId = await getUserIdfromMail(user?.email);
-      const states = {};
-
-      for (const club of clubs) {
-        const status = joinRequestStatus[club._id];
-        
-        if (status === 'pending') {
-          states[club._id] = {
-            text: 'Sending Request...',
-            disabled: true,
-            className: 'bg-gray-400'
-          };
-        } else if (status === 'success') {
-          states[club._id] = {
-            text: 'Request Sent',
-            disabled: true,
-            className: 'bg-green-500'
-          };
-        } else if (club.clubMembers?.some(member => member._id === userId)) {
-          states[club._id] = {
-            text: 'Member',
-            disabled: true,
-            className: 'bg-green-500'
-          };
-        } else {
-          states[club._id] = {
-            text: 'Join Club',
-            disabled: false,
-            className: 'bg-blue-600 hover:bg-blue-700'
-          };
-        }
-      }
-
-      setButtonStates(states);
-    };
-
-    updateButtonStates();
-  }, [clubs, user, joinRequestStatus]);
+ 
 
   const filteredClubs = clubs.filter(club =>
     club.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,57 +74,6 @@ const Clubs = () => {
     };
   };
 
-  const handleJoinLogic = async (clubId, event) => {
-    event.stopPropagation();
-    
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    const club = clubs.find(c => c._id === clubId);
-    const userId = await getUserIdfromMail(user.email);
-
-    if (club.clubMembers?.some(member => member._id === userId)) {
-      toast.info("You are already a member of this club!");
-      return;
-    }
-
-    try {
-      setJoinRequestStatus(prev => ({
-        ...prev,
-        [clubId]: 'pending'
-      }));
-
-      const response = await api.post(`/club/${clubId}/join-request`, {
-        userId
-      });
-
-      if (response.data.success) {
-        setJoinRequestStatus(prev => ({
-          ...prev,
-          [clubId]: 'success'
-        }));
-        toast.success("Join request sent successfully!");
-      }
-    } catch (error) {
-      console.error('Error sending join request:', error);
-      if (error.response?.status === 409) {
-        setJoinRequestStatus(prev => ({
-          ...prev,
-          [clubId]: 'error'
-        }));
-        toast.warning("You have already sent a join request to this club.");
-      } else {
-        const errorMessage = error.response?.data?.message || 'Failed to send join request';
-        setJoinRequestStatus(prev => ({
-          ...prev,
-          [clubId]: 'error'
-        }));
-        toast.error(errorMessage);
-      }
-    }
-  };
 
   if (isLoading) {
     return (
@@ -242,26 +155,31 @@ const Clubs = () => {
                     {club.description}
                   </p>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <User className="h-5 w-5" />
-                      <div className="flex flex-col">
-                        <span className="text-gray-400">Club Admin</span>
-                        <span className="font-medium text-gray-700">
-                          {club.clubLeadId?.name || "No lead assigned"}
-                        </span>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-5 w-5 text-blue-600" />
+                        <div className="flex flex-col">
+                          <span className="text-gray-400">Club Admin</span>
+                          <span className="font-medium text-gray-700">
+                            {club.clubLeadId?.name || "No lead assigned"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-5 w-5 text-purple-600" />
+                        <div className="flex flex-col">
+                          <span className="text-gray-400">Faculty Coordinator</span>
+                          <span className="font-medium text-gray-700">
+                            {club.facultyCoordinater?.name || "Not assigned"}
+                          </span>
+                          
+                        </div>
                       </div>
                     </div>
                     
-                    <button 
-                      className={`flex items-center px-6 py-3 text-white rounded-xl transition-all duration-300 transform hover:scale-105 group relative overflow-hidden ${getJoinButtonState(club._id).className}`}
-                      onClick={(e) => handleJoinLogic(club._id, e)}
-                      disabled={getJoinButtonState(club._id).disabled}
-                    >
-                      <span className="relative z-10">{getJoinButtonState(club._id).text}</span>
-                      <ArrowRight className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform relative z-10" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </button>
+                   
                   </div>
                 </div>
               </div>
