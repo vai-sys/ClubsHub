@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle } from 'lucide-react';
-import axios from 'axios'; 
+import axios from 'axios';
 import api from '../api';
 
 const FacultyDashboard = () => {
@@ -10,63 +10,38 @@ const FacultyDashboard = () => {
   const [remarks, setRemarks] = useState({});
 
   useEffect(() => {
-
     fetchPendingEvents();
   }, []);
 
   const fetchPendingEvents = async () => {
- 
     try {
       const response = await api.get('/event/pending-faculty');
-      
-      
-      console.log('API Response:', response); 
       
       if (!response.data) {
         throw new Error('No data received from server');
       }
 
       setEvents(response.data.data || []);
-      console.log('Events set:', response.data.data); 
       setError(null);
     } catch (err) {
-      console.error('Error fetching events:', err); 
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response,
-        status: err.response?.status
-      }); 
-      
       setError(err.response?.data?.message || 'Failed to fetch pending events');
     } finally {
       setLoading(false);
-     
     }
   };
 
   const handleApproval = async (eventId, approved) => {
- 
-    
     try {
       setError(null);
-      const response = await axios.put(
+      const response = await api.put(
         `http://localhost:3000/api/event/${eventId}/faculty-approval`,
         {
           approved,
           remark: remarks[eventId] || ''
-        },
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
         }
       );
 
-      console.log('Approval response:', response); 
-
       if (response.data.success) {
-        console.log('Approval successful, updating events list'); 
         setEvents(events.filter(event => event._id !== eventId));
         setRemarks(prev => {
           const newRemarks = { ...prev };
@@ -77,13 +52,6 @@ const FacultyDashboard = () => {
         throw new Error(response.data.message || 'Failed to process approval');
       }
     } catch (err) {
-      console.error('Approval error:', err); 
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response,
-        status: err.response?.status
-      }); 
-      
       setError(err.response?.data?.message || 'Failed to process approval');
     }
   };
@@ -99,19 +67,9 @@ const FacultyDashboard = () => {
         minute: '2-digit'
       });
     } catch (err) {
-      console.error('Date formatting error:', err); // Debug log
       return 'Invalid date';
     }
   };
-
-  useEffect(() => {
-    console.log('Current state:', {
-      eventsCount: events.length,
-      loading,
-      error,
-      remarksKeys: Object.keys(remarks)
-    });
-  }, [events, loading, error, remarks]);
 
   if (loading) {
     return (
@@ -157,12 +115,17 @@ const FacultyDashboard = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-2xl font-bold">{event.title}</h3>
+                <h3 className="text-2xl font-bold">{event.name}</h3>
                 <p className="text-lg text-gray-600 mt-2">{event.clubId?.name}</p>
               </div>
-              <span className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-full">
-                PENDING
-              </span>
+              <div className="flex flex-col gap-2 items-end">
+                <span className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-full">
+                  {event.approvalStatus}
+                </span>
+                <span className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full">
+                  {event.mode}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -170,27 +133,42 @@ const FacultyDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-blue-500" />
-                <span>{formatDateTime(event.startDate)}</span>
+                <span>{formatDateTime(event.date)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-blue-500" />
-                <span>
-                  {formatDateTime(event.startDate)} - {formatDateTime(event.endDate)}
-                </span>
+                <span>Duration: {event.duration} minutes</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-blue-500" />
-                <span>{event.venue || 'Venue not specified'}</span>
+                <span>{event.venue || event.platformLink || 'Venue not specified'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-blue-500" />
-                <span>{event.expectedAttendees || 'Not specified'} Expected Attendees</span>
+                <span>{event.maxParticipants} Max Participants</span>
               </div>
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Description</h3>
               <p className="text-gray-700">{event.description}</p>
+              
+              <div className="mt-4">
+                <h4 className="font-semibold mb-1">Departments Allowed:</h4>
+                <p className="text-gray-700">{event.departmentsAllowed.join(', ')}</p>
+              </div>
+              
+              <div className="mt-4">
+                <h4 className="font-semibold mb-1">Registration Deadline:</h4>
+                <p className="text-gray-700">{formatDateTime(event.registrationDeadline)}</p>
+              </div>
+              
+              {event.fees > 0 && (
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-1">Registration Fee:</h4>
+                  <p className="text-gray-700">₹{event.fees}</p>
+                </div>
+              )}
             </div>
 
             <div className="text-sm text-gray-500">
@@ -203,7 +181,6 @@ const FacultyDashboard = () => {
                 placeholder="Enter your remarks here..."
                 value={remarks[event._id] || ''}
                 onChange={(e) => {
-                 
                   setRemarks(prev => ({
                     ...prev,
                     [event._id]: e.target.value
