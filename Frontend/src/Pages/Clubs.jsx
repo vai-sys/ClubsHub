@@ -8,6 +8,8 @@ import api from '../api.js';
 import { AuthContext } from "../AuthContext.jsx";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Navbar from '../components/Navbar'
+
 
 const Clubs = () => {
   const [clubs, setClubs] = useState([]);
@@ -88,6 +90,7 @@ const Clubs = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col items-center mb-16">

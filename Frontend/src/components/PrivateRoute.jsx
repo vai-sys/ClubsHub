@@ -26,7 +26,8 @@ const PrivateRoute = ({ children, roles }) => {
     if (user.role === 'clubAdmin' && currentPath !== '/admin-dashboard') {
       return <Navigate to="/admin-dashboard" replace />;
     }
-    return <Navigate to="/login" replace />;
+    if(user.role==='facultyCoordinator' && currentPath!=='/faculty-coordinater-dashboard')
+    return <Navigate to="/faculty-coordinater-dashboard" replace />;
   }
 
   

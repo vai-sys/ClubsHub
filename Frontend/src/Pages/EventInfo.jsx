@@ -1,23 +1,40 @@
 
 
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { useParams } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Users, AlertCircle, Link, Tag, Trophy, Monitor, IndianRupee, CalendarClock, Download } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  Users, 
+  Tag, 
+  Coins, 
+  Building, 
+  Share2, 
+  Download,
+  Image as ImageIcon,
+  ChevronRight
+} from 'lucide-react';
 import api from '../api';
 
 const EventInfo = () => {
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [event, setEvent] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
   const { id } = useParams();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchEvent = async () => {
       try {
         const response = await api.get(`/event/${id}`);
-        setEvent(response.data.data);
+        if (response.data.success) {
+          setEvent(response.data.data);
+        } else {
+          setError(response.data.message || 'Failed to fetch event details');
+        }
       } catch (err) {
-        setError(err.message);
+        setError(err.response?.data?.message || 'Failed to fetch event details');
       } finally {
         setLoading(false);
       }
@@ -26,229 +43,258 @@ const EventInfo = () => {
     fetchEvent();
   }, [id]);
 
-  const handleRegister = async () => {
-    try {
-      console.log("register");
-    } catch (err) {
-      alert('Registration failed: ' + err.message);
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: event.name,
+        text: event.description,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
     }
   };
 
-  const handleDownload = (attachment) => {
-    window.open(`http://localhost:3000/${attachment.replace(/\\/g, '/')}`, '_blank');
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    
+    // Format date
+    const datePart = date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    // Format time
+    const timePart = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    return `${datePart} at ${timePart}`;
+  };
+
+  const formatShortDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'UPCOMING':
+        return 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20';
+      case 'ONGOING':
+        return 'bg-green-50 text-green-700 ring-1 ring-green-600/20';
+      case 'COMPLETED':
+        return 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20';
+      default:
+        return 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20';
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm flex items-center gap-2 text-red-600">
-          <AlertCircle className="h-5 w-5" />
-          <p>{error}</p>
-        </div>
+      <div className="max-w-2xl mx-auto mt-8 p-6 bg-red-50 border border-red-200 text-red-700 rounded-xl">
+        <p className="font-medium">{error}</p>
       </div>
     );
   }
 
   if (!event) return null;
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      upcoming: 'bg-amber-50 text-amber-700 border-amber-200',
-      ongoing: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      completed: 'bg-gray-50 text-gray-700 border-gray-200'
-    };
-    return `px-3 py-1 rounded-full text-sm font-medium border ${styles[status] || styles.completed}`;
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const isRegistrationOpen = () => {
-    const deadline = new Date(event.registrationDeadline);
-    return new Date() < deadline;
-  };
-
-  const getDeadlineStatus = () => {
-    const deadline = new Date(event.registrationDeadline);
-    const now = new Date();
-    const diffTime = Math.abs(deadline - now);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (now > deadline) return "Registration closed";
-    if (diffDays <= 1) return "Last day to register!";
-    return `${diffDays} days left to register`;
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {event.eventBanner && (
-          <div className="mb-6 rounded-xl overflow-hidden shadow-sm">
-            <img 
-              src={`http://localhost:3000/${event.eventBanner.replace(/\\/g, '/')}`}
-              alt={event.title}
-              className="w-full h-64 object-cover"
-            />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+  
+      <div className="relative h-[70vh] bg-gray-900">
+        {event.eventBanner ? (
+          <img
+            src={`http://localhost:3000/${event.eventBanner.replace(/\\/g, '/')}`}
+            alt={event.name}
+            className="w-full h-full object-cover opacity-80"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700">
+            <ImageIcon className="w-24 h-24 text-white/30" />
           </div>
         )}
-
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-8">
-            <div className="flex flex-col gap-8">
-              
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-6">
-                  {event.ClubId.clubLogo && (
-                    <img 
-                      src={`http://localhost:3000/${event.ClubId.clubLogo.replace(/\\/g, '/')}`}
-                      alt={`${event.ClubId.name} logo`}
-                      className="h-20 w-20 object-contain rounded-lg bg-gray-50 p-2"
-                    />
-                  )}
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{event.title}</h1>
-                    <p className="mt-2 text-gray-500 flex items-center gap-2">
-                      by {event.ClubId.name}
-                      <span className="text-gray-300">•</span>
-                      <span className={getStatusBadge(event.status)}>
-                        {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                
-                {isRegistrationOpen() && (
-                  <button
-                    onClick={handleRegister}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Register Now
-                  </button>
-                )}
-              </div>
-
-             
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-6 rounded-lg">
-                <div className="flex items-center gap-3 text-gray-600">
-                  <Trophy className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Event Type</p>
-                    <p>{event.eventType}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-gray-600">
-                  <Monitor className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Mode</p>
-                    <p>{event.mode}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-gray-600">
-                  <IndianRupee className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Registration Fee</p>
-                    <p>₹{event.fees}</p>
-                  </div>
-                </div>
-              </div>
-
+        
+     
+        <div className="absolute inset-0 bg-black/40 flex flex-col justify-end">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 pb-12 w-full">
+            <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 ${getStatusColor(event.status)}`}>
+              {event.status}
+            </span>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">{event.name}</h1>
             
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <Calendar className="h-5 w-5 text-gray-400" />
-                    <span>{formatDate(event.date)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <Clock className="h-5 w-5 text-gray-400" />
-                    <span>{event.duration / 60} hours</span>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <CalendarClock className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <span className="block">Registration Deadline</span>
-                      <span className="text-sm text-blue-600 font-medium">{getDeadlineStatus()}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  {event.venue && (
-                    <div className="flex items-center gap-3 text-gray-600">
-                      <MapPin className="h-5 w-5 text-gray-400" />
-                      <span>{event.venue}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <Users className="h-5 w-5 text-gray-400" />
-                    <span>
-                      {event.registeredParticipants.length} / {event.maxParticipants} participants
-                    </span>
-                  </div>
-
-                  {event.mode === 'ONLINE' && event.platformLink && (
-                    <div className="flex items-center gap-3 text-gray-600">
-                      <Link className="h-5 w-5 text-gray-400" />
-                      <a href={event.platformLink} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                        Join Event Platform
-                      </a>
-                    </div>
-                  )}
-                </div>
+          
+            <div className="flex items-center space-x-4">
+              <img
+                src={`http://localhost:3000/${event.clubId.clubLogo.replace(/\\/g, '/')}`}
+                alt={event.clubId.name}
+                className="h-12 w-12 rounded-full object-cover ring-2 ring-white/80"
+              />
+              <div>
+                <h3 className="font-medium text-white">{event.clubId.name}</h3>
+                <p className="text-sm text-gray-200">Event Organizer</p>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleShare}
+          className="absolute top-6 right-6 p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-all duration-200"
+          aria-label="Share event"
+        >
+          <Share2 className="h-5 w-5 text-white" />
+        </button>
+      </div>
 
-             
-              <div className="pt-6 border-t border-gray-100">
-                <h2 className="text-xl font-semibold mb-4 text-gray-900">About the Event</h2>
-                <p className="text-gray-600 leading-relaxed">{event.description}</p>
+    
+      <div className="max-w-6xl mx-auto px-4 md:px-6 -mt-8 relative z-10 grid gap-6 pb-12">
+      
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { icon: Calendar, label: 'Date', value: formatShortDate(event.date) },
+            { icon: Clock, label: 'Time', value: new Date(event.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) },
+            
+            { icon: Coins, label: 'Entry Fee', value: `₹${event.fees}` },
+          ].map((item, index) => (
+            <div key={index} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-center space-x-3 mb-2">
+                <item.icon className="h-5 w-5 text-blue-600" />
+                <span className="text-sm text-gray-600">{item.label}</span>
               </div>
+              <p className="font-semibold text-gray-900">{item.value}</p>
+            </div>
+          ))}
+        </div>
 
-           
-              {event.attachments && event.attachments.length > 0 && (
-                <div className="pt-6 border-t border-gray-100">
-                  <h2 className="text-xl font-semibold mb-4 text-gray-900">Event Attachments</h2>
-                  <div className="space-y-3">
-                    {event.attachments.map((attachment, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleDownload(attachment)}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
-                      >
-                        <Download className="h-5 w-5" />
-                        <span>Download Attachment {index + 1}</span>
-                      </button>
+     
+        <div className="grid md:grid-cols-3 gap-6">
+      
+          <div className="md:col-span-2 space-y-6">
+         
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-4 text-gray-900">About Event</h2>
+              <p className="text-gray-700 leading-relaxed mb-6">{event.description}</p>
+              
+              <div className="space-y-4">
+               
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Tag className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-gray-900">Tags</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {event.tags[0].split(',').map((tag) => (
+                      <span key={tag} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                        {tag.trim()}
+                      </span>
                     ))}
                   </div>
                 </div>
-              )}
-
+                
              
-              <div className="pt-6 border-t border-gray-100">
-                <h2 className="text-xl font-semibold mb-4 text-gray-900">About the Club</h2>
-                <p className="text-gray-600 leading-relaxed">{event.ClubId.description}</p>
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Building className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-gray-900">Departments</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {event.departmentsAllowed[0].split(',').map((dept) => (
+                      <span key={dept} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm">
+                        {dept.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
+            </div>
 
-              
-             
+          
+            {event.attachments && event.attachments.length > 0 && (
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h2 className="text-xl font-bold mb-4 text-gray-900">Resources & Documents</h2>
+                <div className="grid gap-3">
+                  {event.attachments.map((attachment, index) => (
+                    <a 
+                      key={index}
+                      href={`${import.meta.env.VITE_API_URL}/${attachment}`}
+                      className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 group"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Download className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium text-gray-900">Attachment {index + 1}</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+        
+          <div className="space-y-6">
+          
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-4 text-gray-900">Venue Details</h2>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <MapPin className="h-5 w-5 text-blue-600 mt-1" />
+                  <div>
+                    <span className="font-medium text-gray-900">Location</span>
+                    <p className="text-gray-700">{event.venue}</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <Building className="h-5 w-5 text-blue-600 mt-1" />
+                  <div>
+                    <span className="font-medium text-gray-900">Mode</span>
+                    <p className="text-gray-700">{event.mode}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-4 text-gray-900">Registration</h2>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <span className="text-sm text-gray-600">Registration Deadline</span>
+                    <p className="font-medium text-gray-900">{formatDate(event.registrationDeadline)}</p>
+                  </div>
+                </div>
+                
+                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">
+                  Register Now
+                </button>
+                
+                <p className="text-sm text-gray-600 text-center">
+                  {event.maxParticipants} spots available
+                </p>
+              </div>
             </div>
           </div>
         </div>

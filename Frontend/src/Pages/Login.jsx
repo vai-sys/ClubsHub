@@ -60,7 +60,7 @@ const Login = () => {
           navigate('/admin-dashboard');
           break;
         case 'facultyCoordinator':
-            navigate('/faculty-dashboard');
+            navigate('/faculty-coordinater-dashboard');
             break;
 
         default:

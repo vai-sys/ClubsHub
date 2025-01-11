@@ -4,7 +4,7 @@ const EventApproval = require('../models/EventApproval');
 const jwt=require("jsonwebtoken")
 const {JWT_SECRET} =require('../config/constants')
 const Club =require('../models/Club')
-const { ApprovalStatus, UserRoles, ApprovalRoles } = require('../config/constants');
+const { UserRoles } = require('../config/constants');
 
 const createEvent = async (req, res) => {
     try {
@@ -725,6 +725,40 @@ const trackEventProgress = async (req, res) => {
     }
 };
 
+const getEventById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const event = await Event.findById(id)
+            .populate([
+                { path: 'clubId', select: 'name clubLogo' },
+                { path: 'createdBy', select: 'name email' },
+                { path: 'registeredParticipants.userId', select: 'name email' }
+            ]);
+
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: event
+        });
+
+    } catch (error) {
+        console.error('Error fetching event by id:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching event',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+};
+
+
 module.exports = {
     createEvent,
     facultyApproval,
@@ -733,6 +767,7 @@ module.exports = {
     getPendingEventsForFaculty,
     getApprovedEvents,
     trackEventProgress,
+    getEventById
     
 };
 

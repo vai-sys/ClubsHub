@@ -13,17 +13,24 @@ import Events from './Pages/Events';
 import EventInfo from './Pages/EventInfo'
 import SuperAdminDashboard from './Pages/SuperAdminDashboard';
 import FacultyDashboard from './Pages/FacultyDashboard';
+import CreateEvent from './components/CreateEvent'
+
+
+
+
 
 
 const App = () => {
   return (
     <AuthProvider>
       <Router>
+       
         <Routes>
+         
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Register />} />
           <Route
-            path="/clubAdmin-dashboard"
+            path="/admin-dashboard"
             element={
               <PrivateRoute roles={['clubAdmin']}>
                 <AdminDashboard />
@@ -37,6 +44,18 @@ const App = () => {
             </PrivateRoute>
           }
           />
+
+             
+<Route  path='/create-event' 
+          element={
+            <PrivateRoute roles={['clubAdmin']}>
+              <CreateEvent/>
+            </PrivateRoute>
+          }
+          />
+
+
+
            <Route  path='/superAdmin-dashboard' 
           element={
             <PrivateRoute roles={['superAdmin']}>
@@ -44,6 +63,8 @@ const App = () => {
             </PrivateRoute>
           }
           />
+
+          
            <Route  path='/faculty-coordinater-dashboard' 
           element={
             <PrivateRoute roles={['facultyCoordinator']}>
@@ -59,6 +80,13 @@ const App = () => {
 </PrivateRoute>
 
           } />
+
+
+          <Route path='' element={
+            <PrivateRoute  roles={['superAdmin']}>
+                <SuperAdminDashboard/>
+            </PrivateRoute>
+          }  />
 
 
 
@@ -86,5 +114,4 @@ const App = () => {
 };
 
 export default App;
-
 
