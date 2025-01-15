@@ -16,6 +16,7 @@ import Navbar from "./components/Navbar";
 import FacultyDashboard from "./Pages/FacultyDashboard";
 import SuperAdminDashboard from "./Pages/SuperAdminDashboard"
 import CreateEvent from "./components/CreateEvent";
+import Calendar from "./components/Calender";
 
 
 const AppContent = () => {
@@ -79,11 +80,17 @@ const AppContent = () => {
         <Route
           path="/profile"
           element={
-            <PrivateRoute roles={["superAdmin", "member", "clubAdmin"]}>
+            <PrivateRoute roles={["superAdmin", "member", "clubAdmin","facultyCoordinator"]}>
               <Profile />
             </PrivateRoute>
           }
         />
+
+        <Route  path="/calender" element={
+          <PrivateRoute roles={["superAdmin", "facultyCoordinator", "clubAdmin",]}>
+            <Calendar/>
+          </PrivateRoute>
+        }  />
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventInfo />} />

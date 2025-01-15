@@ -1,205 +1,194 @@
 
+
+
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, AlertCircle, Calendar, Users, MapPin, MessageCircle } from 'lucide-react';
+import { 
+  CheckCircle, XCircle, Clock, AlertCircle, Calendar, 
+  Users, MapPin, MessageCircle, ChevronDown, ChevronUp,
+  Clock3, IndianRupee, Tag, Building, Layers
+} from 'lucide-react';
 import api from '../api';
 
 const STATUS_COLORS = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  FACULTY_APPROVED: 'bg-blue-100 text-blue-800',
-  SUPER_ADMIN_APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800'
+  PENDING: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+  FACULTY_APPROVED: 'bg-blue-100 text-blue-800 border border-blue-300',
+  SUPER_ADMIN_APPROVED: 'bg-green-100 text-green-800 border border-green-300',
+  REJECTED: 'bg-red-100 text-red-800 border border-red-300'
 };
 
-const AdminDashboard = () => {
-  const [events, setEvents] = useState({ all: [], categorized: {} });
-  const [counts, setCounts] = useState({});
-  const [activeTab, setActiveTab] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+const StatusBadge = ({ status }) => (
+  <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[status]}`}>
+    {status.replace(/_/g, ' ')}
+  </span>
+);
 
-  useEffect(() => {
-    checkUserRole();
-    fetchEventProgress();
-  }, []);
+const EventMetadata = ({ icon: Icon, label, value, className = '' }) => (
+  <div className={`flex items-center space-x-2 ${className}`}>
+    <Icon className="w-4 h-4 text-gray-500" />
+    <span className="text-sm text-gray-600">{value}</span>
+    {label && <span className="text-xs text-gray-500">({label})</span>}
+  </div>
+);
 
-  const checkUserRole = async () => {
-    try {
-      const response = await api.get('/auth/get-user-details');
-      setUserRole(response.data.role);
-    } catch (err) {
-      console.error('Error checking user role:', err);
+const TimelineStep = ({ title, status, date, remarks, reviewer, isLast, role }) => {
+  const [isRemarksExpanded, setIsRemarksExpanded] = useState(false);
+
+  const getStatusDetails = () => {
+    switch (status) {
+      case 'completed':
+        return { icon: CheckCircle, color: 'green', text: 'Approved' };
+      case 'rejected':
+        return { icon: XCircle, color: 'red', text: 'Rejected' };
+      case 'pending':
+        return { icon: Clock, color: 'yellow', text: 'Pending' };
+      default:
+        return { icon: AlertCircle, color: 'gray', text: 'Unknown' };
     }
   };
 
-  const fetchEventProgress = async () => {
-    try {
-      const response = await api.get('/event/track-progress');
-      const { data } = response;
-      
-      if (data.success) {
-        setEvents(data.data);
-        setCounts(data.count);
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      setError('Failed to fetch event progress');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { icon: StatusIcon, color, text } = getStatusDetails();
 
-  const TimelineStep = ({ title, status, date, remarks, reviewer, isLast, role }) => {
-    const getIcon = () => {
-      switch (status) {
-        case 'completed':
-          return <CheckCircle className="w-5 h-5 text-green-500" />;
-        case 'rejected':
-          return <XCircle className="w-5 h-5 text-red-500" />;
-        case 'pending':
-          return <Clock className="w-5 h-5 text-yellow-500" />;
-        default:
-          return <AlertCircle className="w-5 h-5 text-gray-400" />;
-      }
-    };
-
-    const getStatusColor = () => {
-      switch (status) {
-        case 'completed':
-          return 'border-green-500';
-        case 'rejected':
-          return 'border-red-500';
-        case 'pending':
-          return 'border-yellow-500';
-        default:
-          return 'border-gray-300';
-      }
-    };
-
-    return (
-      <div className="flex items-start">
-        <div className="flex flex-col items-center">
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 ${getStatusColor()}`}>
-            {getIcon()}
-          </div>
-          {!isLast && <div className="w-0.5 h-24 bg-gray-200" />}
+  return (
+    <div className="flex items-start group">
+      <div className="flex flex-col items-center">
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-white border-2 border-${color}-500 
+          group-hover:shadow-lg transition-shadow`}>
+          <StatusIcon className={`w-5 h-5 text-${color}-500`} />
         </div>
-        <div className="ml-4 -mt-1 w-full">
-          <div className="flex justify-between items-start">
-            <h4 className="font-medium text-gray-900">{title}</h4>
-            {status !== 'pending' && (
-              <span className={`px-3 py-1 rounded-full text-xs ${status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </span>
+        {!isLast && <div className="w-0.5 h-24 bg-gray-200 group-hover:bg-gray-300 transition-colors" />}
+      </div>
+      
+      <div className="ml-4 -mt-1 w-full">
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="font-medium text-gray-900 group-hover:text-gray-700">{title}</h4>
+            {date && (
+              <p className="text-sm text-gray-500">
+                {new Date(date).toLocaleDateString()} at {new Date(date).toLocaleTimeString()}
+              </p>
             )}
           </div>
-          {date && (
-            <p className="text-sm text-gray-500">
-              {new Date(date).toLocaleDateString()} at {new Date(date).toLocaleTimeString()}
-            </p>
-          )}
-          {status !== 'pending' && reviewer && (
-            <p className="text-sm text-gray-600 mt-1 flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              Reviewed by: <span className="font-medium ml-1">{reviewer}</span>
-              {role && <span className="text-gray-500 ml-1">({role})</span>}
-            </p>
-          )}
-          {remarks && (
-            <div className="mt-2 bg-gray-50 p-4 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
-              <div className="flex items-start space-x-2">
-                <MessageCircle className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Remarks from {reviewer || 'Reviewer'}</p>
-                  <p className="text-sm text-gray-600">{remarks}</p>
-                </div>
-              </div>
-            </div>
+          {status !== 'pending' && (
+            <span className={`px-3 py-1 rounded-full text-xs font-medium 
+              ${status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {text}
+            </span>
           )}
         </div>
+
+        {status !== 'pending' && reviewer && (
+          <div className="mt-2 flex items-center space-x-2 text-sm text-gray-600">
+            <Users className="w-4 h-4" />
+            <span>Reviewed by: <span className="font-medium">{reviewer}</span></span>
+            {role && <span className="text-gray-500">({role})</span>}
+          </div>
+        )}
+
+        {remarks && (
+          <div className="mt-3">
+            <button
+              onClick={() => setIsRemarksExpanded(!isRemarksExpanded)}
+              className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>{isRemarksExpanded ? 'Hide Remarks' : 'Show Remarks'}</span>
+              {isRemarksExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            
+            {isRemarksExpanded && (
+              <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <p className="text-sm text-gray-600">{remarks}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    );
+    </div>
+  );
+};
+
+const EventTimelineCard = ({ event, isExpanded, onToggle }) => {
+  const getEventTypeIcon = (type) => {
+    switch (type) {
+      case 'SEMINAR': return Layers;
+      case 'WORKSHOP': return Building;
+      default: return Tag;
+    }
   };
 
-  const EventTimelineCard = ({ event }) => {
-    const steps = [
-      {
-        title: 'Event Created',
-        status: 'completed',
-        date: event.createdAt,
-        reviewer: event.createdBy?.name,
-        role: 'Creator',
-        remarks: event.description
-      },
-      {
-        title: 'Faculty Review',
-        status: event.progress.facultyApproval.completed 
-          ? event.progress.facultyApproval.approved ? 'completed' : 'rejected'
-          : 'pending',
-        date: event.progress.facultyApproval.date,
-        reviewer: event.progress.facultyApproval.reviewer?.name,
-        role: 'Faculty',
-        remarks: event.progress.facultyApproval.remarks
-      },
-      {
-        title: 'Super Admin Review',
-        status: event.progress.superAdminApproval.completed
-          ? event.progress.superAdminApproval.approved ? 'completed' : 'rejected'
-          : 'pending',
-        date: event.progress.superAdminApproval.date,
-        reviewer: event.progress.superAdminApproval.reviewer?.name,
-        role: 'Super Admin',
-        remarks: event.progress.superAdminApproval.remarks
-      }
-    ];
+  const EventTypeIcon = getEventTypeIcon(event.eventType);
+  console.log("daaata",event.approvalHistory?.find(h => h.role === 'superAdmin')?.approver?.name)
 
-    return (
-      <div className="bg-white rounded-xl shadow-lg mb-6 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-        <div className="p-6 pb-4 border-b">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-                {event.name}
-              </h2>
-              <p className="text-gray-600">{event.club?.name}</p>
+  const formatDuration = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours === 0) return `${remainingMinutes} mins`;
+    if (remainingMinutes === 0) return `${hours} hrs`;
+    return `${hours} hrs ${remainingMinutes} mins`;
+  };
+
+  const steps = [
+    {
+      title: 'Event Created',
+      status: 'completed',
+      date: event.createdAt,
+      reviewer: event.createdBy?.name,
+      role: 'Creator',
+      remarks: event.description
+    },
+    {
+      title: 'Faculty Review',
+      status: event.approvalHistory?.some(h => h.role === 'facultyCoordinator') ? 'completed' : 'pending',
+      date: event.approvalHistory?.find(h => h.role === 'facultyCoordinator')?.date,
+      reviewer: event.approvalHistory?.find(h => h.role === 'facultyCoordinator')?.approver?.name,
+      role: 'Faculty',
+      remarks: event.approvalHistory?.find(h => h.role === 'facultyCoordinator')?.remark
+    },
+    {
+      title: 'Super Admin Review',
+      status: event.approvalHistory?.some(h => h.role === 'superAdmin') ? 'completed' : 'pending',
+      date: event.approvalHistory?.find(h => h.role === 'superAdmin')?.date,
+      reviewer: event.approvalHistory?.find(h => h.role === 'superAdmin')?.approver?.name,
+      role: 'Super Admin',
+      remarks: event.approvalHistory?.find(h => h.role === 'superAdmin')?.remark
+    
+    }
+  ];
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg mb-6 overflow-hidden hover:shadow-xl transition-all">
+      <div className="p-6 cursor-pointer hover:bg-gray-50" onClick={onToggle}>
+        <div className="flex justify-between items-start">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <EventTypeIcon className="w-5 h-5 text-blue-600" />
+              <h2 className="text-xl font-bold text-gray-900">{event.name}</h2>
+              {isExpanded ? 
+                <ChevronUp className="w-5 h-5 text-gray-500" /> : 
+                <ChevronDown className="w-5 h-5 text-gray-500" />
+              }
             </div>
-            <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${STATUS_COLORS[event.approvalStatus]}`}>
-              {event.approvalStatus.replace(/_/g, ' ')}
-            </span>
+            <p className="text-gray-600">{event.clubId?.name}</p>
           </div>
+          <StatusBadge status={event.approvalStatus} />
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-4 mb-8 p-5 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Event Date</p>
-                <p className="font-medium">{new Date(event.date).toLocaleDateString()}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <MapPin className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Venue</p>
-                <p className="font-medium">{event.venue}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Participants</p>
-                <p className="font-medium">{event.registeredParticipants}</p>
-              </div>
-            </div>
-          </div>
 
+        <div className="grid grid-cols-3 gap-2 mt-6">
+          <EventMetadata icon={Calendar} value={new Date(event.date).toLocaleDateString()} />
+          <EventMetadata icon={Clock3} value={formatDuration(event.duration)}  />
+          <EventMetadata icon={IndianRupee} value={`${event.fees}`}  />
+        </div>
+
+        {event.mode === 'OFFLINE' && (
+          <div className="mt-4 flex items-center space-x-2">
+            <MapPin className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-600">{event.venue}</span>
+          </div>
+        )}
+      </div>
+
+      {isExpanded && (
+        <div className="p-6 border-t border-gray-100 bg-gray-50">
           <div className="space-y-8">
             {steps.map((step, index) => (
               <TimelineStep
@@ -210,45 +199,113 @@ const AdminDashboard = () => {
             ))}
           </div>
         </div>
-      </div>
-    );
+      )}
+    </div>
+  );
+};
+
+const AdminDashboard = () => {
+  const [events, setEvents] = useState({ all: [], categorized: {} });
+  const [counts, setCounts] = useState({});
+  const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [expandedEvents, setExpandedEvents] = useState(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchEventProgress();
+  }, []);
+
+  const fetchEventProgress = async () => {
+    try {
+      const response = await api.get('/event/track-progress');
+      if (response.data.success) {
+        setEvents(response.data.data);
+        setCounts(response.data.count);
+      } else {
+        setError(response.data.message || 'Failed to fetch events');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch events');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-    </div>
-  );
-  
-  if (error) return (
-    <div className="max-w-6xl mx-auto p-8">
-      <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-100">
-        {error}
+  const toggleEventExpansion = (eventId) => {
+    setExpandedEvents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
+
+  const filteredEvents = (activeTab === 'all' ? events.all : events.categorized[activeTab] || [])
+    .filter(event => 
+      event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.clubId?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-100">
+          <p className="font-medium">Error loading events</p>
+          <p className="mt-1 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Event Timeline Dashboard</h1>
-      
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Event Timeline Dashboard</h1>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search events..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
           <p className="text-gray-600 text-sm">Total Events</p>
-          <p className="text-3xl font-bold mt-2">{counts.total}</p>
+          <p className="text-3xl font-bold mt-2">{counts.total || 0}</p>
         </div>
-        <div className="bg-yellow-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-blue-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
+          <p className="text-blue-600 text-sm">Faculty Approved</p>
+          <p className="text-3xl font-bold mt-2">{counts.facultyApproved || 0}</p>
+        </div>
+        <div className="bg-yellow-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
           <p className="text-yellow-600 text-sm">Pending Review</p>
-          <p className="text-3xl font-bold mt-2">{counts.pending}</p>
+          <p className="text-3xl font-bold mt-2">{counts.pending || 0}</p>
         </div>
-        <div className="bg-red-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-red-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
           <p className="text-red-600 text-sm">Rejected</p>
-          <p className="text-3xl font-bold mt-2">{counts.rejected}</p>
+          <p className="text-3xl font-bold mt-2">{counts.rejected || 0}</p>
         </div>
       </div>
 
       <div className="flex space-x-4 mb-8">
-        {['all', 'pending', 'rejected'].map((tab) => (
+        {['all', 'pending', 'facultyApproved', 'superAdminApproved', 'rejected'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -258,16 +315,26 @@ const AdminDashboard = () => {
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
             }`}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)} Events
+            {tab.split(/(?=[A-Z])/).join(' ')}
           </button>
         ))}
       </div>
 
       <div className="space-y-6">
-        {activeTab === 'all' 
-          ? events.all.map(event => <EventTimelineCard key={event._id} event={event} />)
-          : events.categorized[activeTab]?.map(event => <EventTimelineCard key={event._id} event={event} />)
-        }
+        {filteredEvents.map(event => (
+          <EventTimelineCard 
+            key={event._id}
+            event={event}
+            isExpanded={expandedEvents.has(event._id)}
+            onToggle={() => toggleEventExpansion(event._id)}
+          />
+        ))}
+        
+        {filteredEvents.length === 0 && (
+          <div className="text-center py-12">
+           <p className="text-gray-500">No events found</p>
+          </div>
+        )}
       </div>
     </div>
   );

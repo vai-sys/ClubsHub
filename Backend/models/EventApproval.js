@@ -1,30 +1,66 @@
+
+
+// const eventApprovalSchema = new mongoose.Schema({
+//   eventId: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: 'Event',
+//     required: true,
+//   },
+//   approvedBy: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     ref: 'User',
+//     required: true,
+//   },
+//   approvedAt: {
+//     type: Date,
+//     default: Date.now,
+//   },
+//   approvalStatusRole: {
+//     type: String,
+//     enum: ['approved', 'rejected'],
+//     required: true,
+//   },
+//   role: {
+//     type: String,
+//     enum: ['facultyCoordinator', 'superAdmin'],
+//     required: true,
+//   },
+// });
+
+// const EventApproval = mongoose.model('EventApproval', eventApprovalSchema);
+// module.exports = EventApproval;
+
 const mongoose = require('mongoose');
 
 const eventApprovalSchema = new mongoose.Schema({
   eventId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Event',
-    required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+      required: true,
   },
   approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
   },
   approvedAt: {
-    type: Date,
-    default: Date.now,
+      type: Date,
+      default: Date.now,
   },
   approvalStatusRole: {
-    type: String,
-    enum: ['approved', 'rejected'],
-    required: true,
+      type: String,
+      enum: ['approved', 'rejected'],
+      required: true,
   },
   role: {
-    type: String,
-    enum: ['facultyCoordinator', 'superAdmin'],
-    required: true,
+      type: String,
+      enum: ['facultyCoordinator', 'superAdmin'],
+      required: true,
   },
+  remark: {
+      type: String,
+      default: ''
+  }
 });
 
 const EventApproval = mongoose.model('EventApproval', eventApprovalSchema);

@@ -608,7 +608,6 @@ const trackEventProgress = async (req, res) => {
             });
         }
 
-        // Get all events created by this club admin
         const events = await Event.find({
             createdBy: userId
         }).populate([
@@ -618,18 +617,16 @@ const trackEventProgress = async (req, res) => {
             { path: 'createdBy', select: 'name email' }
         ]);
 
-        // Get approval history
         const approvalHistory = await EventApproval.find({
             eventId: { $in: events.map(event => event._id) }
-        }).populate('approvedBy', 'name email role');
+        }).populate('approvedBy', 'name email role remark');
+        console.log(approvalHistory)
 
-        // Format the progress data with explicit rejection handling
         const eventsWithProgress = events.map(event => {
             const eventApprovals = approvalHistory.filter(
                 approval => approval.eventId.toString() === event._id.toString()
             );
 
-            // Determine rejection details
             const rejectedByFaculty = event.approvalStatus === 'REJECTED' && !event.facultyApproval.approved;
             const rejectedBySuperAdmin = event.approvalStatus === 'REJECTED' && event.facultyApproval.approved;
 
@@ -637,16 +634,26 @@ const trackEventProgress = async (req, res) => {
                 _id: event._id,
                 name: event.name,
                 description: event.description,
-                eventType: event.eventType,
-                mode: event.mode,
+                clubId: event.clubId,
                 date: event.date,
                 venue: event.venue,
+                duration: event.duration,
+                tags: event.tags,
+                fees: event.fees,
+                maxParticipants: event.maxParticipants,
+                registrationDeadline: event.registrationDeadline,
+                platformLink: event.platformLink,
+                eventBanner: event.eventBanner,
+                eventType: event.eventType,
+                mode: event.mode,
                 status: event.status,
-                approvalStatus: event.approvalStatus,
-                club: event.clubId,
-                createdAt: event.createdAt,
                 createdBy: event.createdBy,
+                attachments: event.attachments,
+                departmentsAllowed: event.departmentsAllowed,
+                approvalStatus: event.approvalStatus,
                 registeredParticipants: event.registeredParticipants?.length || 0,
+                createdAt: event.createdAt,
+                updatedAt: event.updatedAt,
                 currentStatus: {
                     isRejected: event.approvalStatus === 'REJECTED',
                     rejectedBy: rejectedByFaculty ? 'Faculty Coordinator' : 
@@ -688,12 +695,12 @@ const trackEventProgress = async (req, res) => {
                     role: approval.role,
                     status: approval.approvalStatusRole,
                     approver: approval.approvedBy,
+                    remark: approval.remark,
                     date: approval.approvedAt
                 }))
             };
         });
 
-        // Categorize events
         const categorizedEvents = {
             pending: eventsWithProgress.filter(event => event.approvalStatus === 'PENDING'),
             facultyApproved: eventsWithProgress.filter(event => event.approvalStatus === 'FACULTY_APPROVED'),
@@ -724,6 +731,145 @@ const trackEventProgress = async (req, res) => {
         });
     }
 };
+
+// const trackEventProgress = async (req, res) => {
+//     try {
+//         const authHeader = req.headers.authorization;
+//         if (!authHeader?.startsWith('Bearer ')) {
+//             return res.status(401).json({ 
+//                 success: false,
+//                 message: 'Invalid or missing Authorization header' 
+//             });
+//         }
+        
+//         const token = authHeader.split(' ')[1];
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const userId = decoded.userId;
+
+//         const user = await User.findById(userId);
+//         if (!user || user.role !== UserRoles.CLUB_ADMIN) {
+//             return res.status(403).json({
+//                 success: false,
+//                 message: 'Access denied. Only club admins can track their events'
+//             });
+//         }
+
+      
+//         const events = await Event.find({
+//             createdBy: userId
+//         }).populate([
+//             { path: 'clubId', select: 'name' },
+//             { path: 'facultyApproval.approvedBy', select: 'name email remark' },
+//             { path: 'superAdminApproval.approvedBy', select: 'name email remark' },
+//             { path: 'createdBy', select: 'name email' }
+//         ]);
+
+      
+//         const approvalHistory = await EventApproval.find({
+//             eventId: { $in: events.map(event => event._id) }
+//         }).populate('approvedBy', 'name email role');
+
+    
+//         const eventsWithProgress = events.map(event => {
+//             const eventApprovals = approvalHistory.filter(
+//                 approval => approval.eventId.toString() === event._id.toString()
+//             );
+
+         
+//             const rejectedByFaculty = event.approvalStatus === 'REJECTED' && !event.facultyApproval.approved;
+//             const rejectedBySuperAdmin = event.approvalStatus === 'REJECTED' && event.facultyApproval.approved;
+
+//             return {
+//                 _id: event._id,
+//                 name: event.name,
+//                 description: event.description,
+//                 eventType: event.eventType,
+//                 mode: event.mode,
+//                 date: event.date,
+//                 venue: event.venue,
+//                 status: event.status,
+//                 approvalStatus: event.approvalStatus,
+//                 club: event.clubId,
+//                 createdAt: event.createdAt,
+//                 createdBy: event.createdBy,
+//                 registeredParticipants: event.registeredParticipants?.length || 0,
+//                 currentStatus: {
+//                     isRejected: event.approvalStatus === 'REJECTED',
+//                     rejectedBy: rejectedByFaculty ? 'Faculty Coordinator' : 
+//                                rejectedBySuperAdmin ? 'Super Admin' : null,
+//                     rejectionRemark: rejectedByFaculty ? event.facultyApproval.remark :
+//                                     rejectedBySuperAdmin ? event.superAdminApproval.remark : null,
+//                     rejectionDate: rejectedByFaculty ? event.facultyApproval.approvedAt :
+//                                  rejectedBySuperAdmin ? event.superAdminApproval.approvedAt : null
+//                 },
+//                 progress: {
+//                     created: {
+//                         completed: true,
+//                         date: event.createdAt,
+//                         by: event.createdBy
+//                     },
+//                     facultyApproval: {
+//                         status: rejectedByFaculty ? 'REJECTED' : 
+//                                 event.approvalStatus === 'PENDING' ? 'PENDING' :
+//                                 'APPROVED',
+//                         completed: event.approvalStatus !== 'PENDING',
+//                         date: event.facultyApproval.approvedAt,
+//                         remark: event.facultyApproval.remark,
+//                         approved: event.facultyApproval.approved,
+//                         approver: event.facultyApproval.approvedBy
+//                     },
+//                     superAdminApproval: {
+//                         status: rejectedBySuperAdmin ? 'REJECTED' :
+//                                 event.approvalStatus === 'SUPER_ADMIN_APPROVED' ? 'APPROVED' :
+//                                 event.approvalStatus === 'FACULTY_APPROVED' ? 'PENDING' :
+//                                 'NOT_APPLICABLE',
+//                         completed: ['SUPER_ADMIN_APPROVED', 'REJECTED'].includes(event.approvalStatus) && event.facultyApproval.approved,
+//                         date: event.superAdminApproval.approvedAt,
+//                         remark: event.superAdminApproval.remark,
+//                         approved: event.superAdminApproval.approved,
+//                         approver: event.superAdminApproval.approvedBy
+//                     }
+//                 },
+//                 approvalHistory: eventApprovals.map(approval => ({
+//                     role: approval.role,
+//                     status: approval.approvalStatusRole,
+//                     approver: approval.approvedBy,
+//                     date: approval.approvedAt
+//                 }))
+//             };
+//         });
+
+//         // Categorize events
+//         const categorizedEvents = {
+//             pending: eventsWithProgress.filter(event => event.approvalStatus === 'PENDING'),
+//             facultyApproved: eventsWithProgress.filter(event => event.approvalStatus === 'FACULTY_APPROVED'),
+//             superAdminApproved: eventsWithProgress.filter(event => event.approvalStatus === 'SUPER_ADMIN_APPROVED'),
+//             rejected: eventsWithProgress.filter(event => event.approvalStatus === 'REJECTED'),
+//         };
+
+//         return res.status(200).json({
+//             success: true,
+//             count: {
+//                 total: eventsWithProgress.length,
+//                 pending: categorizedEvents.pending.length,
+//                 facultyApproved: categorizedEvents.facultyApproved.length,
+//                 superAdminApproved: categorizedEvents.superAdminApproved.length,
+//                 rejected: categorizedEvents.rejected.length
+//             },
+//             data: {
+//                 all: eventsWithProgress,
+//                 categorized: categorizedEvents
+//             }
+//         });
+//     } catch (error) {
+//         console.error('Error tracking event progress:', error);
+//         return res.status(500).json({
+//             success: false,
+//             message: 'Error tracking event progress',
+//             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+//         });
+//     }
+// };
 
 const getEventById = async (req, res) => {
     try {

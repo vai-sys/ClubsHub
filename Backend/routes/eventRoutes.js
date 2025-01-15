@@ -12,6 +12,9 @@ const { createEvent,
 const { uploadEventFiles } = require('../middleware/uploadMiddleware');
 
 
+
+
+
 router.post('/', auth,authorize(['clubAdmin']),uploadEventFiles, createEvent);
 router.put('/:eventId/faculty-approval',auth,authorize(['facultyCoordinator']),  facultyApproval);
 router.put('/:eventId/super-admin-approval', auth,authorize(['superAdmin']), superAdminApproval);

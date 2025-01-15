@@ -1,11 +1,12 @@
 import React from 'react'
 
 
+
 const StudentDashboard = () => {
   return (
     <div>
+Student Dashbaord
 
-    studentDashbaord
       
     </div>
   )
