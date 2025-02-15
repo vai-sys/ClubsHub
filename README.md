@@ -1,6 +1,6 @@
 # ClubShub - College Clubs Management Platform
 
-![ClubShub Banner](assets/banner.png)
+
 
 ## 📌 Overview
 ClubShub is a **MERN-stack** based web application designed to **streamline club management** within a college. It allows students to explore clubs, check upcoming events, and participate in competitions while providing role-based access for club leaders and administrators to manage their respective clubs effectively.
@@ -23,7 +23,7 @@ ClubShub is a **MERN-stack** based web application designed to **streamline club
 - 🔹 **User Authentication & Authorization (JWT-based)**
 - 🔹 **Real-time Updates & Notifications**
 
-![ClubShub Workflow](assets/workflow.png)
+
 
 ## 🛠️ Tech Stack
 ### **Frontend (React.js)**
@@ -36,7 +36,7 @@ ClubShub is a **MERN-stack** based web application designed to **streamline club
 - JWT for authentication
 - MongoDB + Mongoose for database management
 
-![Tech Stack](assets/tech_stack.png)
+
 
 ## 📦 Installation & Setup
 ### **1️⃣ Clone the Repository**
@@ -85,7 +85,7 @@ npm run dev
 | **Faculty Coordinator** | Review and approve/reject events from club leads |
 | **Super Admin** | Final approval for events, manage all users, clubs, and events |
 
-![Role-Based Access](assets/role_based_access.png)
+
 
 ## 📌 Future Enhancements
 - 📢 **Push Notifications for Event Updates**
@@ -95,7 +95,7 @@ npm run dev
   - **Club Performance Metrics**
   - **User Engagement Insights**
 
-![Future Enhancements](assets/future_enhancements.png)
+
 
 ## 📜 License
 This project is open-source under the **MIT License**.
