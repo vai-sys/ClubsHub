@@ -119,8 +119,7 @@ For issues or feature requests, raise an issue on [GitHub](https://github.com/va
 
 ![Screenshot 2025-02-15 151731](https://github.com/user-attachments/assets/a9dc9c99-27b8-4ce3-b639-9f553e29d807)
 ![Screenshot 2025-02-15 151825](https://github.com/user-attachments/assets/d5fb3c74-27f3-4132-9389-5ea73db25b23)
-![Screenshot 2025-02-15 151844](https://github.com/user-attachments/assets/c4bfbdb4-9e8a-4867-![Screenshot 2025-02-15 161117](https://github.com/user-attachments/assets/4e61e873-67f7-4f66-be3c-84855eb7418e)
-9b78-57de17a2182c)
+
 ![Screenshot 2025-02-15 161135](https://github.com/user-attachments/assets/f610f342-a702-4243-8dcd-36e363f13152)
 
 
