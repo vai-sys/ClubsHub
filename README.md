@@ -125,7 +125,4 @@ For issues or feature requests, raise an issue on [GitHub](https://github.com/va
 
 ![Screenshot 2025-02-15 161135](https://github.com/user-attachments/assets/f610f342-a702-4243-8dcd-36e363f13152)
 
-![Screenshot 2025-02-15 161135](https://github.com/user-attachments/assets/874e4fdf-a294-4f19-b6fe-188af4e3c2e5)
-
-![Screenshot 2025-02-15 151825](https://github.com/user-attachments/assets/c1ac6d34-cbf5-463b-992c-30bcc7cdf8ff)
 
