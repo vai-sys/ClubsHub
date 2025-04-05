@@ -2,6 +2,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import api from '../api';
@@ -21,11 +22,19 @@ const FacultyDashboard = () => {
     ]).finally(() => setLoading(false));
   }, []);
 
+  const isValidDate = (dateString) => {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date) && date > new Date();
+  };
+
   const fetchPendingEvents = async () => {
     try {
       const response = await api.get('/event/pending-faculty');
       if (!response.data) throw new Error('No data received from server');
-      setEvents(response.data.data || []);
+      
+      
+      const validEvents = (response.data.data || []).filter(event => isValidDate(event.date));
+      setEvents(validEvents);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch pending events');
     }
@@ -37,7 +46,9 @@ const FacultyDashboard = () => {
       const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).toISOString();
       const response = await api.get(`/event/approved?startDate=${startDate}&endDate=${endDate}`);
       if (response.data?.success) {
-        setApprovedEvents(response.data.data || []);
+        
+        const validApprovedEvents = (response.data.data || []).filter(event => isValidDate(event.date));
+        setApprovedEvents(validApprovedEvents);
       }
     } catch (err) {
       console.error('Error fetching approved events:', err);
@@ -149,7 +160,6 @@ const FacultyDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Calendar Section */}
           <div className="lg:col-span-8">
             <div className="bg-white rounded-lg shadow-lg">
               <div className="p-4 border-b border-gray-200">
@@ -195,7 +205,6 @@ const FacultyDashboard = () => {
             </div>
           </div>
 
-          {/* Pending Approvals Section */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white rounded-lg shadow-lg">
               <div className="p-4 border-b border-gray-200">

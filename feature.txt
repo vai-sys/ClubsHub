@@ -1,0 +1,1 @@
+1.if the date is inavlid and it is to be approved by superadmin then delete it automatically

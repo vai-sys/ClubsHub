@@ -3,9 +3,11 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const session = require('express-session');
 
+
 const authRoutes = require('./routes/authRoutes');
 const clubRoutes=require('./routes/clubRoutes')
 const eventRoutes=require('./routes/eventRoutes')
+const announcement=require('./routes/announcementRoutes')
 
 const app = express();
 
@@ -41,6 +43,9 @@ app.use(require('cookie-parser')());
 app.use('/api/auth', authRoutes);
 app.use('/api/club',clubRoutes)
 app.use('/api/event',eventRoutes)
+app.use('/api/announcement',announcement);
+
+
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

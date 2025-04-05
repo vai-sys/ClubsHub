@@ -58,8 +58,7 @@ const EventInfo = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    
-    // Format date
+   
     const datePart = date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -67,7 +66,7 @@ const EventInfo = () => {
       day: 'numeric',
     });
 
-    // Format time
+   
     const timePart = date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -116,6 +115,8 @@ const EventInfo = () => {
   }
 
   if (!event) return null;
+
+  console.log("event is",event);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -201,13 +202,11 @@ const EventInfo = () => {
                     <Tag className="h-4 w-4 text-blue-600" />
                     <span className="font-medium text-gray-900">Tags</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {event.tags[0].split(',').map((tag) => (
-                      <span key={tag} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
+                  {event.tags && event.tags.map((tag, index) => (
+  <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+    {tag}
+  </span>
+))}
                 </div>
                 
              
@@ -216,13 +215,11 @@ const EventInfo = () => {
                     <Building className="h-4 w-4 text-blue-600" />
                     <span className="font-medium text-gray-900">Departments</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {event.departmentsAllowed[0].split(',').map((dept) => (
-                      <span key={dept} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm">
-                        {dept.trim()}
-                      </span>
-                    ))}
-                  </div>
+                  {event.departmentsAllowed && event.departmentsAllowed.map((dept, index) => (
+  <span key={index} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm">
+    {typeof dept === 'string' ? dept : dept.type || JSON.stringify(dept)}
+  </span>
+))}
                 </div>
               </div>
             </div>
