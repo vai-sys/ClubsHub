@@ -47,9 +47,7 @@ const Register = () => {
     if (!formData.department.trim()) {
       throw new Error('Department is required');
     }
-    if (!formData.year.trim()) {
-      throw new Error('Year is required');
-    }
+   
     
    
   };

@@ -1,90 +1,207 @@
-const Announcement=require("../models/Anouncement")
+const Announcement = require("../models/Anouncement");
+const { UserRoles } = require("../config/constants");
+const uploadAttachments = require("../middleware/uploadAttachments");
+
+
 exports.createAnnouncement = async (req, res) => {
-   try {
-       const { title, description, createdBy, createdByRole, allowedRolesToView } = req.body;
+  try {
+    const { title, description } = req.body;
+    const createdBy = req.user.id;
+    const createdByRole = req.user.role;
 
-       
-       if (!title || !description || !createdBy || !createdByRole || !allowedRolesToView) {
-           return res.status(400).json({ success: false, message: "Please add all the necessary fields" });
-       }
+    if (!title || !description) {
+      return res.status(400).json({
+        success: false,
+        message: "Please add all the necessary fields",
+      });
+    }
 
-       const newAnnouncement = new Announcement(req.body);
-       await newAnnouncement.save();
+    let allowedRolesToView = [];
 
-       res.status(201).json({ success: true, message: 'Announcement created successfully', announcement: newAnnouncement });
-   } catch (error) {
-       res.status(500).json({ success: false, message: 'Error creating announcement', error: error.message });
-   }
+    if (createdByRole === UserRoles.CLUB_ADMIN) {
+      allowedRolesToView = [
+        UserRoles.MEMBER,
+        UserRoles.FACULTY_COORDINATOR,
+        UserRoles.CLUB_ADMIN,
+        UserRoles.SUPER_ADMIN,
+      ];
+    } else if (createdByRole === UserRoles.SUPER_ADMIN) {
+      allowedRolesToView = [
+        UserRoles.CLUB_ADMIN,
+        UserRoles.FACULTY_COORDINATOR,
+        UserRoles.SUPER_ADMIN,
+      ];
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to create announcements",
+      });
+    }
+
+    const uploadedAttachments = req.files?.map(file => file.path) || [];
+
+    const newAnnouncement = new Announcement({
+      title,
+      description,
+      createdBy,
+      createdByRole,
+      allowedRolesToView,
+      attachments: uploadedAttachments
+    });
+
+    await newAnnouncement.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Announcement created successfully",
+      announcement: newAnnouncement,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error creating announcement",
+      error: error.message,
+    });
+  }
 };
 
-exports.GetAllAnnouncements = async (req, res) => {
-   try {
-     const { status, priority, clubId } = req.query;
-     let filter = {};
- 
-     if (status) filter.status = status;
-     if (priority) filter.priority = priority;
-     if (clubId) filter.clubId = clubId;
- 
-     const allAnnouncements = await Announcement.find(filter).sort({ createdAt: -1 });
- 
-     return res.status(200).json({ success: true, announcements: allAnnouncements });
- 
-   } catch (err) {
-     console.error("Error fetching announcements:", err.message);
-     return res.status(500).json({ success: false, message: "Internal server error" });
-   }
- };
 
+exports.getAllAnnouncements = async (req, res) => {
+  try {
+    const userRole = req.user.role;
+    const { status, priority, clubId } = req.query;
 
- exports.getAnnouncementById = async (req, res) => {
-   try {
-     const { id } = req.params;
- 
-     
-     const announcement = await Announcement.findById(id);
- 
-     if (!announcement) {
-       return res.status(404).json({ success: false, message: "Announcement not found" });
-     }
- 
-     return res.status(200).json({ success: true, announcement });
- 
-   } catch (error) {
-     console.error("Error fetching announcement:", error.message);
-     return res.status(500).json({ success: false, message: "Internal server error" });
-   }
- };
+    let filter = {
+      allowedRolesToView: { $in: [userRole] },
+    };
 
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (clubId) filter.clubId = clubId;
 
- exports.updateAnnouncement = async (req, res) => {
-   try {
-       const updatedAnnouncement = await Announcement.findByIdAndUpdate(
-           req.params.id,
-           { ...req.body, updatedAt: Date.now() },
-           { new: true, runValidators: true }
-       );
+    const announcements = await Announcement.find(filter).sort({ createdAt: -1 });
 
-       if (!updatedAnnouncement) {
-           return res.status(404).json({ success: false, message: 'Announcement not found' });
-       }
-
-       res.status(200).json({ success: true, message: 'Announcement updated successfully', announcement: updatedAnnouncement });
-   } catch (error) {
-       res.status(500).json({ success: false, message: 'Error updating announcement', error: error.message });
-   }
+    res.status(200).json({
+      success: true,
+      announcements,
+    });
+  } catch (err) {
+    console.error("Error fetching announcements:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 };
+
+
+exports.getAnnouncementById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userRole = req.user.role;
+
+    const announcement = await Announcement.findById(id);
+
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        message: "Announcement not found",
+      });
+    }
+
+    if (!announcement.allowedRolesToView.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied to this announcement",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      announcement,
+    });
+  } catch (error) {
+    console.error("Error fetching announcement:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+exports.updateAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const announcement = await Announcement.findById(id);
+
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        message: "Announcement not found",
+      });
+    }
+
+    if (announcement.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this announcement",
+      });
+    }
+
+    const updatedAnnouncement = await Announcement.findByIdAndUpdate(
+      id,
+      { ...req.body, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Announcement updated successfully",
+      announcement: updatedAnnouncement,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating announcement",
+      error: error.message,
+    });
+  }
+};
+
 
 exports.deleteAnnouncement = async (req, res) => {
-   try {
-       const deletedAnnouncement = await Announcement.findByIdAndDelete(req.params.id);
+  try {
+    const { id } = req.params;
 
-       if (!deletedAnnouncement) {
-           return res.status(404).json({ success: false, message: 'Announcement not found' });
-       }
+    const announcement = await Announcement.findById(id);
 
-       res.status(200).json({ success: true, message: 'Announcement deleted successfully' });
-   } catch (error) {
-       res.status(500).json({ success: false, message: 'Error deleting announcement', error: error.message });
-   }
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        message: "Announcement not found",
+      });
+    }
+
+    if (announcement.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this announcement",
+      });
+    }
+
+    await announcement.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Announcement deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting announcement",
+      error: error.message,
+    });
+  }
 };

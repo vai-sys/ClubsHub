@@ -1,27 +1,23 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/constants');
 
-
-
 exports.auth = async (req, res, next) => {
   try {
     let token;
 
-  
     if (req.cookies?.token) {
       token = req.cookies.token;
     }
     
     const authHeader = req.headers.authorization;
     if (authHeader) {
-     
       if (authHeader.startsWith('Bearer ')) {
         token = authHeader.split(' ')[1];
       } else {
-       
         token = authHeader;
       }
     }
+    console.log("token", token);
 
     if (!token) {
       return res.status(401).json({
@@ -31,24 +27,20 @@ exports.auth = async (req, res, next) => {
     }
 
     try {
-     
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, JWT_SECRET);
       
       req.user = {
         id: decoded.id,
         email: decoded.email,
         role: decoded.role
-    
       };
 
       next();
     } catch (err) {
-  
       if (req.cookies?.token) {
         res.clearCookie('token');
       }
 
-    
       if (err.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
@@ -71,7 +63,6 @@ exports.auth = async (req, res, next) => {
 };
 
 exports.authorize = (roles = []) => {
-
   if (typeof roles === 'string') {
     roles = [roles];
   }

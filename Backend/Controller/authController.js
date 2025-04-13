@@ -5,10 +5,11 @@ const { JWT_SECRET, JWT_EXPIRATION, UserRoles } = require('../config/constants')
 
 const generateToken = (user) => {
   const payload = {
-    userId: user._id,
+    id: user._id,
     role: user.role,
     email: user.email
   };
+  
   console.log('Token payload:', payload);  
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
 };
@@ -17,8 +18,11 @@ const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
+  } else if (authHeader) {
+    // If the header doesn't have 'Bearer ' prefix but contains a token
+    return authHeader;
   }
-  return req.cookies.token;
+  return req.cookies?.token || null;
 };
 
 exports.register = async (req, res) => {
@@ -29,30 +33,24 @@ exports.register = async (req, res) => {
       password, 
       role, 
       department,
-     
     } = req.body;
-
    
-    if (!name || !email || !password || !department ) {
+    if (!name || !email || !password || !department) {
       return res.status(400).json({ 
         message: 'Missing required fields' 
       });
     }
-
     
     if (role && !Object.values(UserRoles).includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
- 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-
     
     const hashedPassword = await bcrypt.hash(password, 10);
-
     
     const user = new User({
       name,
@@ -66,10 +64,7 @@ exports.register = async (req, res) => {
 
     await user.save();
 
-
     const token = generateToken(user);
-  
-
     
     res.cookie('token', token, {
       httpOnly: true,
@@ -77,7 +72,6 @@ exports.register = async (req, res) => {
       sameSite: 'strict',
       maxAge: parseInt(JWT_EXPIRATION, 10) * 1000,
     });
-
  
     res.status(201).json({
       message: 'User registered successfully',
@@ -152,16 +146,16 @@ exports.login = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const token = getTokenFromRequest(req);
+    console.log("token", token);
   
     if (!token) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-
     const decoded = jwt.verify(token, JWT_SECRET);
-   
-    const user = await User.findById(decoded.userId);
-
+    
+    const user = await User.findById(decoded.id);
+    console.log("user", user);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -197,26 +191,26 @@ exports.updateProfile = async (req, res) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+   
+    const user = await User.findById(decoded.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
 
     const allowedUpdates = {
       name: req.body.name,
       department: req.body.department,
       year: req.body.year
     };
-
   
     Object.keys(allowedUpdates).forEach(key => 
       allowedUpdates[key] === undefined && delete allowedUpdates[key]
     );
 
+    
     const updatedUser = await User.findByIdAndUpdate(
-      decoded.userId,
+      decoded.id,
       allowedUpdates,
       { new: true, runValidators: true }
     );
@@ -260,16 +254,14 @@ exports.logout = async (req, res) => {
 
 exports.getUserDetails = async (req, res) => {
   try {
-
     const token = getTokenFromRequest(req);
-    console.log(token)
+    console.log(token);
     if (!token) {
       return res.status(401).json({ message: "Not Authenticated" });
     }
-
    
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log(decoded)
+    console.log(decoded);
     if (!decoded || !decoded.email) {
       return res.status(401).json({ message: "Invalid Token" });
     }
@@ -278,7 +270,6 @@ exports.getUserDetails = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
   
     res.status(200).json({
       message: "User details fetched successfully!",
@@ -289,7 +280,3 @@ exports.getUserDetails = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-
-
-

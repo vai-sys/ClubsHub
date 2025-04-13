@@ -1,19 +1,21 @@
 const express = require("express");
 const { 
     createAnnouncement, 
-    GetAllAnnouncements, 
+    getAllAnnouncements, 
     getAnnouncementById, 
     updateAnnouncement, 
     deleteAnnouncement 
 } = require("../Controller/announcementController"); 
+const {authorize,auth} =require("../middleware/authMiddleware")
+const uploadAttachments = require("../middleware/uploadAttachments");
 
 const router = express.Router();
 
 
-router.post("/", createAnnouncement);
-router.get("/", GetAllAnnouncements);
-router.get("/:id", getAnnouncementById);
-router.put("/:id", updateAnnouncement);
-router.delete("/:id", deleteAnnouncement);
+router.post("/",auth,authorize(['superAdmin','clubAdmin']),uploadAttachments, createAnnouncement);
+router.get("/",auth,  getAllAnnouncements);
+router.get("/:id",auth, getAnnouncementById);
+router.put("/:id",auth ,authorize(['superAdmin','clubAdmin']), updateAnnouncement);
+router.delete("/:id",auth,authorize(['superAdmin','clubAdmin']), deleteAnnouncement);
 
 module.exports = router;  

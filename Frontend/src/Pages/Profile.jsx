@@ -31,6 +31,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         const response = await api.get('/auth/profile');
+        console.log(response);
         setProfile(response.data.user);
         setFormData({
           name: response.data.user.name || '',

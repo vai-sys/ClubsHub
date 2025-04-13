@@ -18,6 +18,11 @@ import SuperAdminDashboard from "./Pages/SuperAdminDashboard"
 import CreateEvent from "./components/CreateEvent";
 import Calendar from "./components/Calender";
 
+import CreateAnnouncement from "./Pages/CreateAnnouncement";
+import EditAnnouncement from "./Pages/EditAnnouncement";
+import ListAnnouncement from "./Pages/ListAnnouncements";
+
+
 
 const AppContent = () => {
   const location = useLocation();
@@ -91,6 +96,46 @@ const AppContent = () => {
             <Calendar/>
           </PrivateRoute>
         }  />
+
+
+          
+           
+<Route
+  path="/create-announcement"
+  element={
+    <PrivateRoute roles={["clubAdmin", "superAdmin"]}>
+      <CreateAnnouncement />
+    </PrivateRoute>
+  }
+/>
+
+
+<Route
+  path="/announcements"
+  element={
+    <PrivateRoute roles={["clubAdmin", "superAdmin", "facultyCoordinator", "member"]}>
+      <ListAnnouncement />
+    </PrivateRoute>
+  }
+/>
+{/* 
+
+<Route
+  path="/edit-announcement/:id"
+  element={
+    <PrivateRoute roles={["clubAdmin", "superAdmin"]}>
+      <EditAnnouncement />
+    </PrivateRoute>
+  }
+/> */}
+
+
+
+
+
+
+
+
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventInfo />} />

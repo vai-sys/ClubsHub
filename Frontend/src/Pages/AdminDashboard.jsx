@@ -117,7 +117,7 @@ const EventTimelineCard = ({ event, isExpanded, onToggle }) => {
   };
 
   const EventTypeIcon = getEventTypeIcon(event.eventType);
-  console.log("daaata",event.approvalHistory?.find(h => h.role === 'superAdmin')?.approver?.name)
+  // console.log("daaata",event.approvalHistory?.find(h => h.role === 'superAdmin')?.approver?.name)
 
   const formatDuration = (minutes) => {
     const hours = Math.floor(minutes / 60);
