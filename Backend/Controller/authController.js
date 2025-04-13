@@ -10,7 +10,7 @@ const generateToken = (user) => {
     email: user.email
   };
   
-  console.log('Token payload:', payload);  
+   
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
 };
 
@@ -169,6 +169,7 @@ exports.getUserProfile = async (req, res) => {
         role: user.role,
         department: user.department,
         year: user.year,
+        image:user.image,
         clubAffiliations: user.clubAffiliations,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
@@ -278,5 +279,68 @@ exports.getUserDetails = async (req, res) => {
   } catch (error) {
     console.error("Error fetching user details:", error);
     return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+
+exports.updateProfilePicture = async (req, res) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No profile picture provided' });
+    }
+    
+    const profilePicturePath = `/${req.file.path.replace(/\\/g, '/')}`;
+    
+    // Only attempt to delete old image if it exists and is different from the new one
+    if (user.image && user.image !== profilePicturePath && user.image !== '') {
+      try {
+        const oldImagePath = path.join(__dirname, '..', user.image.substring(1));
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      } catch (err) {
+        console.log('Error deleting old image: ', err.message);
+        // Continue with the update even if old image deletion fails
+      }
+    }
+    
+    // Update user's image field
+    user.image = profilePicturePath;
+    console.log("user", user);
+   
+    await user.save();
+    
+    return res.status(200).json({
+      message: "Profile picture updated successfully",
+      user: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        year: user.year,
+        clubAffiliations: user.clubAffiliations,
+        image: user.image,
+        lastLogin: user.lastLogin,
+        isActive: user.isActive
+      }
+    });
+  } catch (error) {
+    console.error('Profile picture update error:', error);
+    res.status(500).json({
+      message: 'Failed to update profile picture',
+      error: error.message,
+    });
   }
 };

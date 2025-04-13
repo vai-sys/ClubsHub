@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+
+
+import React, { useEffect, useState, useRef } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
 import { Camera, LogOut, User, Book, Calendar, Shield, Users, Check, X } from 'lucide-react';
@@ -8,6 +10,8 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     department: '',
@@ -74,11 +78,65 @@ const Profile = () => {
     try {
       const response = await api.put('/auth/update-profile', formData);
       setProfile(response.data.user);
+    
+
       setIsEditing(false);
     } catch (err) {
       setError('Failed to update profile. Please try again.');
     }
   };
+
+  const handleProfilePictureClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+   
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      setError('Please select a valid image file (JPEG, PNG)');
+      return;
+    }
+    
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size should be less than 2MB');
+      return;
+    }
+    
+    setUploadingImage(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+      
+      const response = await api.post('/auth/update-profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      
+      setProfile(prev => ({
+        ...prev,
+        image: response.data.user.image
+      }));
+
+      console.log("profile",profile)
+      
+      
+      setError('');
+    } catch (err) {
+      setError('Failed to upload profile picture. Please try again.');
+      console.error('Upload failed:', err);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+
 
   if (loading) {
     return (
@@ -107,6 +165,7 @@ const Profile = () => {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-gradient-to-tr from-purple-100 via-blue-100 to-pink-100 py-12 px-4">
       <div className="max-w-2xl mx-auto">
@@ -114,12 +173,43 @@ const Profile = () => {
           <div className="relative h-48 bg-white">
             <div className="absolute -bottom-16 left-1/2 -translate-x-1/2">
               <div className="relative">
-                <div className="w-32 h-32 bg-gradient-to-tr from-pink-500 to-purple-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
-                  <User className="w-16 h-16 text-white" />
+                <div className="w-32 h-32 bg-gradient-to-tr from-pink-500 to-purple-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
+                 
+                  {profile?.image ? (
+                    <img 
+                    src={`http://localhost:3000${profile.image}?t=${new Date().getTime()}`} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  ) : (
+                    <User className="w-16 h-16 text-white" />
+                  )}
                 </div>
-                <button className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors">
-                  <Camera className="w-5 h-5 text-gray-600" />
+                <button 
+                  onClick={handleProfilePictureClick}
+                  disabled={uploadingImage}
+                  className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors"
+                >
+                  {uploadingImage ? (
+                    <div className="animate-spin w-5 h-5 text-gray-600">
+                      <svg className="w-full h-full" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <Camera className="w-5 h-5 text-gray-600" />
+                  )}
                 </button>
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/jpeg,image/png,image/jpg"
+                  className="hidden"
+                />
               </div>
             </div>
           </div>
@@ -231,18 +321,20 @@ const Profile = () => {
                 <div className="bg-white/50 rounded-2xl p-6 backdrop-blur-sm space-y-4">
                   <div className="flex items-center gap-3">
                     <Users className="w-5 h-5 text-blue-600" />
-                    <div className="flex flex-wrap gap-2 mt-2">
-  {profile?.clubAffiliations?.length > 0 ? (
-    profile.clubAffiliations.map((club, index) => (
-      <span key={club._id} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-        {club.clubName} 
-      </span>
-    ))
-  ) : (
-    <p className="text-gray-500 text-sm">No club affiliations</p>
-  )}
-</div>
-
+                    <div>
+                      <p className="text-sm text-gray-500">Club Affiliations</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {profile?.clubAffiliations?.length > 0 ? (
+                          profile.clubAffiliations.map((club) => (
+                            <span key={club._id || club.clubId} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                              {club.clubName} 
+                            </span>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm">No club affiliations</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">

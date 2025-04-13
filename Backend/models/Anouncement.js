@@ -16,10 +16,7 @@ const AnnouncementSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
-    eventId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event'
-    },
+   
     clubId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Club'
@@ -47,16 +44,7 @@ const AnnouncementSchema = new mongoose.Schema(
     attachments: [{
       type: String
     }],
-    priority: {
-      type: String,
-      enum: ['LOW', 'MEDIUM', 'HIGH'],
-      default: 'MEDIUM'
-    },
-    status: {
-      type: String,
-      enum: ['PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'PUBLISHED'],
-      default: 'PENDING_APPROVAL'
-    },
+   
     visibleFrom: {
       type: Date,
       default: Date.now

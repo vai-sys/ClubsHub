@@ -15,7 +15,7 @@ const CreateAnnouncement = ({ onCreated }) => {
     attachments.forEach(file => formData.append('attachments', file));
 
     try {
-      await api.post('/api/announcements', formData);
+      await api.post('/announcement', formData);
       alert('Announcement created successfully');
       setTitle('');
       setDescription('');

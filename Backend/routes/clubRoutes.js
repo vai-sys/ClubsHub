@@ -6,7 +6,8 @@ const {
     getAllClubs, 
     createClub, 
     addMemberToClub, 
-    getClubDetails 
+    getClubDetails ,
+    clubAdminUsingID
 } = require("../Controller/clubController");
 
 const {
@@ -58,6 +59,8 @@ router.get(
     authorize(['member']),
     getUserJoinReq    
 );
+
+router.get('/:userId/clubs-with-admin-status',auth,clubAdminUsingID)
 
 router.post(
     '/:clubId/respond',
