@@ -17,7 +17,7 @@ exports.auth = async (req, res, next) => {
         token = authHeader;
       }
     }
-    console.log("token", token);
+    
 
     if (!token) {
       return res.status(401).json({
@@ -28,6 +28,7 @@ exports.auth = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
+     
       
       req.user = {
         id: decoded.id,

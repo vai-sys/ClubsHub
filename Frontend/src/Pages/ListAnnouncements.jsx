@@ -1,14 +1,23 @@
-
-
-
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
 import EditAnnouncement from './EditAnnouncement';
 import api from '../api';
+import { 
+  Megaphone, 
+  Plus, 
+  RefreshCw, 
+  Edit2, 
+  Trash2, 
+  Calendar, 
+  User, 
+  Download, 
+  Frown 
+} from 'lucide-react';
 
 const ListAnnouncement = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [editingData, setEditingData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clubs, setClubs] = useState({});
   const [creators, setCreators] = useState({});
@@ -24,12 +33,12 @@ const ListAnnouncement = () => {
       const announcementsData = res.data.announcements;
       setAnnouncements(announcementsData);
       
-      // Extract unique club IDs from announcements
+      
       const clubIds = [...new Set(announcementsData
         .filter(a => a.club)
         .map(a => a.club))];
       
-      // Extract creator IDs from announcements
+      
       const creatorIds = [...new Set(announcementsData
         .filter(a => a.createdBy)
         .map(a => a.createdBy))];
@@ -37,10 +46,10 @@ const ListAnnouncement = () => {
       console.log("Club IDs:", clubIds);
       console.log("Creator IDs:", creatorIds);
       
-      // Fetch club details
+     
       await fetchClubDetails(clubIds);
       
-      // Fetch creator details
+      
       await fetchCreatorDetails(creatorIds);
     } catch (err) {
       console.error('Error fetching announcements', err);
@@ -49,13 +58,13 @@ const ListAnnouncement = () => {
     }
   };
 
-  // Fetch club details for showing club names
+ 
   const fetchClubDetails = async (clubIds) => {
     try {
-      // Fetch club details for each club ID
+     
       const clubsData = {};
       
-      // Fetch details for each club and store in clubsData object
+      
       for (const clubId of clubIds) {
         try {
           const response = await api.get(`/club/${clubId}`);
@@ -77,10 +86,8 @@ const ListAnnouncement = () => {
     try {
       const creatorsData = {};
       
-      
       for (const creatorId of creatorIds) {
         try {
-         
           const response = await api.get(`/club/${creatorId}/clubs-with-admin-status`);
           if (response.data) {
             creatorsData[creatorId] = response.data;
@@ -108,20 +115,27 @@ const ListAnnouncement = () => {
     }
   };
 
+  const handleEdit = (announcement) => {
+    setEditingId(announcement._id);
+    setEditingData(announcement);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingData(null);
+  };
+
   useEffect(() => {
     fetchAnnouncements();
   }, []);
 
- 
   const isCreator = (announcement) => {
     return user && announcement.createdBy && announcement.createdBy === user._id;
   };
 
- 
   const canModify = (announcement) => {
     return isCreator(announcement) || (user && user.role === 'superAdmin');
   };
-
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
@@ -133,20 +147,16 @@ const ListAnnouncement = () => {
     });
   };
   
-
- 
   const getCreatorClubName = (creatorId) => {
     if (!creators[creatorId] || !creators[creatorId].clubs || creators[creatorId].clubs.length === 0) {
       return null;
     }
     
-   
     const adminClub = creators[creatorId].clubs.find(club => club.isClubAdmin);
     
     if (adminClub) {
       return adminClub.clubName;
     }
-    
     
     return creators[creatorId].clubs[0].clubName;
   };
@@ -155,18 +165,14 @@ const ListAnnouncement = () => {
     <div className="max-w-5xl mx-auto p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center">
-          <svg className="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
-          </svg>
+          <Megaphone className="w-8 h-8 mr-3 text-blue-600" />
           <h2 className="text-3xl font-bold text-gray-800">Announcements</h2>
         </div>
         
         <div className="flex space-x-3">
           {hasAdminAccess && (
             <a href="/create-announcement" className="flex items-center bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
+              <Plus className="w-5 h-5 mr-2" />
               New Announcement
             </a>
           )}
@@ -174,9 +180,7 @@ const ListAnnouncement = () => {
             onClick={fetchAnnouncements}
             className="flex items-center bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md border border-gray-200"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
+            <RefreshCw className="w-5 h-5 mr-2" />
             Refresh
           </button>
         </div>
@@ -188,9 +192,7 @@ const ListAnnouncement = () => {
         </div>
       ) : announcements.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-          <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
+          <Frown className="w-16 h-16 mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500 text-lg">No announcements found</p>
         </div>
       ) : (
@@ -201,10 +203,13 @@ const ListAnnouncement = () => {
                 <div className="p-6">
                   <EditAnnouncement
                     announcementId={a._id}
+                    initialData={editingData}
                     onUpdated={() => {
                       setEditingId(null);
+                      setEditingData(null);
                       fetchAnnouncements();
                     }}
+                    onCancel={handleCancelEdit}
                   />
                 </div>
               ) : (
@@ -215,20 +220,13 @@ const ListAnnouncement = () => {
                       <div className="flex flex-wrap gap-3 mt-2">
                        
                         <div className="flex items-center text-sm text-gray-500">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                          </svg>
+                          <Calendar className="w-4 h-4 mr-1" />
                           <span>Posted: {formatDate(a.createdAt)}</span>
                         </div>
                         
-                      
-                        
-                        
                         {a.createdBy && (
                           <div className="flex items-center text-sm text-gray-500">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
+                            <User className="w-4 h-4 mr-1" />
                             
                             {creators[a.createdBy] && getCreatorClubName(a.createdBy) ? (
                               <span className="ml-1 font-semibold">
@@ -243,22 +241,18 @@ const ListAnnouncement = () => {
                     {canModify(a) && (
                       <div className="flex space-x-2">
                         <button 
-                          onClick={() => setEditingId(a._id)} 
+                          onClick={() => handleEdit(a)} 
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit announcement"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                          </svg>
+                          <Edit2 className="w-5 h-5" />
                         </button>
                         <button 
                           onClick={() => handleDelete(a._id)} 
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete announcement"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                          </svg>
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     )}
@@ -297,9 +291,7 @@ const ListAnnouncement = () => {
                                   className="flex items-center justify-center w-full h-full text-blue-600 hover:text-blue-700"
                                 >
                                   <div className="text-center">
-                                    <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                    </svg>
+                                    <Download className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                                     <span className="text-sm font-medium">Download File</span>
                                   </div>
                                 </a>

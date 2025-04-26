@@ -1,6 +1,3 @@
-
-
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Users, Calendar, Bell, Trophy, Mail, BookOpen, Tag, Clock } from "lucide-react";
 import { useState, useEffect, useContext } from 'react';
@@ -9,6 +6,7 @@ import { AuthContext } from "../AuthContext.jsx";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../api';
+import axios from 'axios';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center h-screen bg-gradient-to-br from-violet-50 to-blue-50">
@@ -113,11 +111,44 @@ const LeadershipCard = ({ title, user }) => (
   </div>
 );
 
+const AnnouncementCard = ({ announcement }) => {
+  
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  return (
+    <div className="p-4 rounded-xl bg-white border border-blue-100 hover:shadow-md transition-all">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-shrink-0">
+          <Bell className="h-5 w-5 text-blue-500" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">{announcement.title}</h3>
+          <p className="text-xs text-gray-500">
+            {formatDate(announcement.createdAt || announcement.updatedAt)}
+            {announcement.createdBy?.name ? ` • By ${announcement.createdBy.name}` : ''}
+          </p>
+        </div>
+      </div>
+      <p className="text-gray-600 text-sm line-clamp-3">{announcement.description}</p>
+    </div>
+  );
+};
+
 const ClubDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [club, setClub] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
   const [error, setError] = useState(null);
   const [joinRequestStatus, setJoinRequestStatus] = useState('idle');
   const { user } = useContext(AuthContext);
@@ -168,7 +199,7 @@ const ClubDetails = () => {
           createdAt: clubData.createdAt || new Date().toISOString(),
         });
 
-        // Check if user is already a member
+        
         if (user) {
           const userId = await getUserIdfromMail(user.email);
           setIsMember(clubData.clubMembers?.some(member => member._id === userId));
@@ -182,6 +213,41 @@ const ClubDetails = () => {
 
     getClubDetails();
   }, [id, user]);
+
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      if (!id) return;
+      
+      setIsLoadingAnnouncements(true);
+      try {
+       
+        const response = await api.get(`/announcement/club/${id}`);
+        console.log(response)
+        
+       
+        if (response.data && response.data.data) {
+          setAnnouncements(response.data.data);
+          
+    
+          console.log("Fetched announcements:", response.data.data);
+        } else {
+          console.log("No announcements found in response:", response.data);
+          setAnnouncements([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch announcements:", err);
+        toast.error("Failed to load announcements");
+        setAnnouncements([]);
+      } finally {
+        setIsLoadingAnnouncements(false);
+      }
+    };
+
+    if (club) {
+      fetchAnnouncements();
+    }
+  }, [id, club]);
 
   const handleJoinRequest = async () => {
     if (!user) {
@@ -254,6 +320,11 @@ const ClubDetails = () => {
           className: 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700'
         };
     }
+  };
+
+  const viewAllAnnouncements = () => {
+   
+    console.log("View all announcements for club:", id);
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -342,12 +413,27 @@ const ClubDetails = () => {
               <Card 
                 title="Announcements"
                 actionLabel="View All"
-                onAction={() => console.log("View all announcements")}
+                onAction={viewAllAnnouncements}
               >
-                <div className="flex items-center justify-center py-12">
-                  <Bell className="h-16 w-16 text-blue-200" />
-                  <p className="text-gray-500 ml-4">No announcements</p>
-                </div>
+                {isLoadingAnnouncements ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  </div>
+                ) : announcements && announcements.length > 0 ? (
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                    {announcements.map(announcement => (
+                      <AnnouncementCard 
+                        key={announcement._id} 
+                        announcement={announcement} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-12">
+                    <Bell className="h-16 w-16 text-blue-200" />
+                    <p className="text-gray-500 ml-4">No announcements</p>
+                  </div>
+                )}
               </Card>
             </div>
           </div>

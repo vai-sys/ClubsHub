@@ -5,19 +5,24 @@ const uploadAttachments = require("../middleware/uploadAttachments");
 
 exports.createAnnouncement = async (req, res) => {
   try {
-    const { title, description } = req.body;
+
+    const { title, description, clubId } = req.body;
+    
+  
     const createdBy = req.user.id;
     const createdByRole = req.user.role;
-
-    if (!title || !description) {
+    
+   
+    if (!title || !description || !clubId) {
       return res.status(400).json({
         success: false,
-        message: "Please add all the necessary fields",
+        message: "Please add all the necessary fields, including clubId",
       });
     }
-
+    
+  
     let allowedRolesToView = [];
-
+    
     if (createdByRole === UserRoles.CLUB_ADMIN) {
       allowedRolesToView = [
         UserRoles.MEMBER,
@@ -37,26 +42,34 @@ exports.createAnnouncement = async (req, res) => {
         message: "You are not authorized to create announcements",
       });
     }
-
+    
+  
     const uploadedAttachments = req.files?.map(file => file.path) || [];
-
+    
+ 
     const newAnnouncement = new Announcement({
       title,
       description,
+      clubId: clubId, 
       createdBy,
       createdByRole,
       allowedRolesToView,
       attachments: uploadedAttachments
     });
-
+    
+  
     await newAnnouncement.save();
-
+    
+    
     res.status(201).json({
       success: true,
       message: "Announcement created successfully",
       announcement: newAnnouncement,
     });
   } catch (error) {
+    console.error('Error creating announcement:', error);
+    
+   
     res.status(500).json({
       success: false,
       message: "Error creating announcement",
@@ -64,6 +77,7 @@ exports.createAnnouncement = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getAllAnnouncements = async (req, res) => {
@@ -205,3 +219,28 @@ exports.deleteAnnouncement = async (req, res) => {
     });
   }
 };
+
+exports.getAnnouncementsByClubId = async (req, res) => {
+  try {
+    const { clubId } = req.params;
+
+    const announcements = await Announcement.find({ clubId })
+      .where('isActive')
+      .equals(true)
+      .sort({ visibleFrom: -1 })
+      .populate('createdBy', 'name email'); 
+
+   
+    return res.status(200).json({
+      success: true,
+      data: announcements
+    });
+  } catch (error) {
+    console.error('Error fetching club announcements:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch announcements' 
+    });
+  }
+};
+

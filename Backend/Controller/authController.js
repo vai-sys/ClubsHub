@@ -12,6 +12,8 @@ const generateToken = (user) => {
   
    
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
+
+
 };
 
 const getTokenFromRequest = (req) => {
@@ -19,7 +21,7 @@ const getTokenFromRequest = (req) => {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
   } else if (authHeader) {
-    // If the header doesn't have 'Bearer ' prefix but contains a token
+   
     return authHeader;
   }
   return req.cookies?.token || null;
@@ -34,6 +36,7 @@ exports.register = async (req, res) => {
       role, 
       department,
     } = req.body;
+    console.log("JWT Secret:", process.env.JWT_SECRET); 
    
     if (!name || !email || !password || !department) {
       return res.status(400).json({ 
@@ -98,6 +101,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
+    console.log("user",user);
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -303,7 +307,7 @@ exports.updateProfilePicture = async (req, res) => {
     
     const profilePicturePath = `/${req.file.path.replace(/\\/g, '/')}`;
     
-    // Only attempt to delete old image if it exists and is different from the new one
+   
     if (user.image && user.image !== profilePicturePath && user.image !== '') {
       try {
         const oldImagePath = path.join(__dirname, '..', user.image.substring(1));
@@ -312,11 +316,11 @@ exports.updateProfilePicture = async (req, res) => {
         }
       } catch (err) {
         console.log('Error deleting old image: ', err.message);
-        // Continue with the update even if old image deletion fails
+       
       }
     }
     
-    // Update user's image field
+  
     user.image = profilePicturePath;
     console.log("user", user);
    
