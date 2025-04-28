@@ -31,19 +31,28 @@ const Events = () => {
           clubLogo: event.clubId.clubLogo,
           clubName: event.clubId.name
         }));
-        setEvents(transformedEvents);
+  
+      
+        const sortedEvents = transformedEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+        setEvents(sortedEvents);
         setError(null);
       } else {
         throw new Error('Failed to fetch approved events');
       }
     } catch (err) {
-      setError(err.response?.status === 401 ? 'Unauthorized - Please log in again' :
-              err.response?.status === 403 ? 'You do not have permission to view approved events' :
-              'Failed to fetch approved events');
+      setError(
+        err.response?.status === 401
+          ? 'Unauthorized - Please log in again'
+          : err.response?.status === 403
+          ? 'You do not have permission to view approved events'
+          : 'Failed to fetch approved events'
+      );
     } finally {
       setLoading(false);
     }
   };
+  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

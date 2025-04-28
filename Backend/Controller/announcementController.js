@@ -157,12 +157,12 @@ exports.updateAnnouncement = async (req, res) => {
       });
     }
 
-    if (announcement.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to update this announcement",
-      });
-    }
+    // if (announcement.createdBy.toString() !== req.user.id) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "You are not authorized to update this announcement",
+    //   });
+    // }
 
     const updatedAnnouncement = await Announcement.findByIdAndUpdate(
       id,
@@ -198,12 +198,12 @@ exports.deleteAnnouncement = async (req, res) => {
       });
     }
 
-    if (announcement.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to delete this announcement",
-      });
-    }
+    // if (announcement.createdBy.toString() !== req.user.id) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "You are not authorized to delete this announcement",
+    //   });
+    // }
 
     await announcement.deleteOne();
 
