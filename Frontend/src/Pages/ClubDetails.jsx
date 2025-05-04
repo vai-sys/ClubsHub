@@ -323,8 +323,7 @@ const ClubDetails = () => {
   };
 
   const viewAllAnnouncements = () => {
-   
-    console.log("View all announcements for club:", id);
+   navigate("/announcement")
   };
 
   if (isLoading) return <LoadingSpinner />;

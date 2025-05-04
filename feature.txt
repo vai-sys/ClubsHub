@@ -1,1 +1,2 @@
 1.if the date is inavlid and it is to be approved by superadmin then delete it automatically
+2.use cdn,cloudflare for images storage

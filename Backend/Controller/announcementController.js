@@ -6,7 +6,7 @@ const uploadAttachments = require("../middleware/uploadAttachments");
 exports.createAnnouncement = async (req, res) => {
   try {
 
-    const { title, description, clubId } = req.body;
+    const { title, description, clubId,visibleUntil } = req.body;
     
   
     const createdBy = req.user.id;
@@ -54,6 +54,7 @@ exports.createAnnouncement = async (req, res) => {
       createdBy,
       createdByRole,
       allowedRolesToView,
+      visibleUntil,
       attachments: uploadedAttachments
     });
     
