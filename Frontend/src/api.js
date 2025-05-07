@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'http://localhost:3000/api',
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -12,6 +12,9 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Remove the token interceptor since we're using cookies
+// The cookie will be automatically sent with each request
 
 export default api;
 

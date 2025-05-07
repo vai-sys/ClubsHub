@@ -1,4 +1,4 @@
-const Event = require('../models/Event');
+const { Event } = require('../models/Event');
 const User = require('../models/User');
 const EventApproval = require('../models/EventApproval');
 const jwt=require("jsonwebtoken")
