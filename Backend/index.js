@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const session = require('express-session');
+
 
 const authRoutes = require('./routes/authRoutes');
 const clubRoutes=require('./routes/clubRoutes')
@@ -23,17 +23,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(session({
-  secret: 'mnkjhiuyuyuytyrf',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60 * 1000 
-  }
-}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -1,20 +1,20 @@
-
-
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Calendar, 
   Clock, 
   MapPin, 
-  Users, 
   Tag, 
   Coins, 
   Building, 
   Share2, 
   Download,
   Image as ImageIcon,
-  ChevronRight
+  ChevronRight,
+  Users,
+  ArrowRight,
+  Calendar as CalendarIcon,
+  Info
 } from 'lucide-react';
 import api from '../api';
 
@@ -58,15 +58,14 @@ const EventInfo = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-   
+    
     const datePart = date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-
-   
+    
     const timePart = date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -80,28 +79,38 @@ const EventInfo = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       month: 'long',
-      day: 'numeric',
-      year: 'numeric'
+      day: 'numeric'
     });
   };
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
+    let color = "";
+    
     switch (status) {
       case 'UPCOMING':
-        return 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20';
+        color = "bg-blue-100 text-blue-800";
+        break;
       case 'ONGOING':
-        return 'bg-green-50 text-green-700 ring-1 ring-green-600/20';
+        color = "bg-emerald-100 text-emerald-800";
+        break;
       case 'COMPLETED':
-        return 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20';
+        color = "bg-gray-100 text-gray-800";
+        break;
       default:
-        return 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20';
+        color = "bg-gray-100 text-gray-800";
     }
+    
+    return (
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${color}`}>
+        {status}
+      </span>
+    );
   };
-
+  
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -116,181 +125,226 @@ const EventInfo = () => {
 
   if (!event) return null;
 
-  console.log("event is",event);
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-  
-      <div className="relative h-[70vh] bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Banner */}
+      <div className="relative h-[50vh] md:h-[60vh] overflow-hidden">
         {event.eventBanner ? (
           <img
             src={`http://localhost:3000/${event.eventBanner.replace(/\\/g, '/')}`}
             alt={event.name}
-            className="w-full h-full object-cover opacity-80"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700">
-            <ImageIcon className="w-24 h-24 text-white/30" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600">
+            <ImageIcon className="w-20 h-20 text-white/40" />
           </div>
         )}
         
-     
-        <div className="absolute inset-0 bg-black/40 flex flex-col justify-end">
-          <div className="max-w-6xl mx-auto px-4 md:px-6 pb-12 w-full">
-            <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 ${getStatusColor(event.status)}`}>
-              {event.status}
-            </span>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">{event.name}</h1>
-            
-          
-            <div className="flex items-center space-x-4">
-              <img
-                src={`http://localhost:3000/${event.clubId.clubLogo.replace(/\\/g, '/')}`}
-                alt={event.clubId.name}
-                className="h-12 w-12 rounded-full object-cover ring-2 ring-white/80"
-              />
-              <div>
-                <h3 className="font-medium text-white">{event.clubId.name}</h3>
-                <p className="text-sm text-gray-200">Event Organizer</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Overlay Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30"></div>
         
+        {/* Share Button */}
         <button
           onClick={handleShare}
-          className="absolute top-6 right-6 p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-all duration-200"
+          className="absolute top-6 right-6 p-2.5 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-all duration-200"
           aria-label="Share event"
         >
           <Share2 className="h-5 w-5 text-white" />
         </button>
       </div>
 
-    
-      <div className="max-w-6xl mx-auto px-4 md:px-6 -mt-8 relative z-10 grid gap-6 pb-12">
-      
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { icon: Calendar, label: 'Date', value: formatShortDate(event.date) },
-            { icon: Clock, label: 'Time', value: new Date(event.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) },
-            
-            { icon: Coins, label: 'Entry Fee', value: `₹${event.fees}` },
-          ].map((item, index) => (
-            <div key={index} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
-              <div className="flex items-center space-x-3 mb-2">
-                <item.icon className="h-5 w-5 text-blue-600" />
-                <span className="text-sm text-gray-600">{item.label}</span>
+      {/* Main Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 pb-20">
+        {/* Event Header Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                {getStatusBadge(event.status)}
+                <span className="text-sm font-medium text-gray-500">{formatDate(event.date)}</span>
               </div>
-              <p className="font-semibold text-gray-900">{item.value}</p>
-            </div>
-          ))}
-        </div>
-
-     
-        <div className="grid md:grid-cols-3 gap-6">
-      
-          <div className="md:col-span-2 space-y-6">
-         
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">About Event</h2>
-              <p className="text-gray-700 leading-relaxed mb-6">{event.description}</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{event.name}</h1>
               
-              <div className="space-y-4">
-               
+              <div className="flex items-center space-x-4">
+                <img
+                  src={`http://localhost:3000/${event.clubId.clubLogo.replace(/\\/g, '/')}`}
+                  alt={event.clubId.name}
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-gray-100"
+                />
                 <div>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Tag className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-gray-900">Tags</span>
-                  </div>
-                  {event.tags && event.tags.map((tag, index) => (
-  <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-    {tag}
-  </span>
-))}
-                </div>
-                
-             
-                <div>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Building className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-gray-900">Departments</span>
-                  </div>
-                  {event.departmentsAllowed && event.departmentsAllowed.map((dept, index) => (
-  <span key={index} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm">
-    {typeof dept === 'string' ? dept : dept.type || JSON.stringify(dept)}
-  </span>
-))}
+                  <h3 className="font-medium text-gray-900">{event.clubId.name}</h3>
+                  <p className="text-sm text-gray-500">Event Organizer</p>
                 </div>
               </div>
             </div>
+            
+            <div className="flex flex-col">
+              <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2">
+                Register Now <ArrowRight className="h-4 w-4" />
+              </button>
+              <p className="text-sm text-gray-500 text-center mt-2">
+                {event.maxParticipants} spots available
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Event Details Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: About & Resources */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* About Section */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
+              <h2 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+                <Info className="h-5 w-5 text-indigo-600" />
+                About Event
+              </h2>
+              <p className="text-gray-700 leading-relaxed mb-8">{event.description}</p>
+              
+              {/* Tags & Departments */}
+              <div className="space-y-8">
+                {event.tags && event.tags.length > 0 && (
+                  <div>
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Tag className="h-5 w-5 text-indigo-600" />
+                      <span className="font-medium text-lg text-gray-900">Tags</span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {event.tags.flatMap((tag, tagIndex) => 
+                        tag.split(',').map((word, wordIndex) => (
+                          <div 
+                            key={`${tagIndex}-${wordIndex}`} 
+                            className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium shadow-sm hover:shadow transition-all"
+                          >
+                            {word.trim()}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+               {event.departmentsAllowed && event.departmentsAllowed.length > 0 && (
+  <div className="pt-2">
+    <div className="flex items-center space-x-2 mb-4">
+      <Building className="h-5 w-5 text-indigo-600" />
+      <span className="font-medium text-lg text-gray-900">Departments</span>
+    </div>
+    <div className="flex flex-wrap gap-3">
+      {event.departmentsAllowed.flatMap((dept, index) =>
+        dept.split(",").map((word, idx) => (
+          <div
+            key={`${index}-${idx}`}
+            className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium shadow-sm hover:shadow transition-all"
+          >
+            {word.trim()}
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
+              </div>
+            </div>
 
-          
+            {/* Resources Section */}
             {event.attachments && event.attachments.length > 0 && (
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-xl font-bold mb-4 text-gray-900">Resources & Documents</h2>
+              <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
+                <h2 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+                  <Download className="h-5 w-5 text-indigo-600" />
+                  Resources & Documents
+                </h2>
                 <div className="grid gap-3">
                   {event.attachments.map((attachment, index) => (
                     <a 
                       key={index}
                       href={`${import.meta.env.VITE_API_URL}/${attachment}`}
-                      className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 group"
+                      className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 group transition-all"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <div className="flex items-center space-x-3">
-                        <Download className="h-5 w-5 text-blue-600" />
+                        <div className="p-2 bg-indigo-100 rounded-lg text-indigo-700">
+                          <Download className="h-4 w-4" />
+                        </div>
                         <span className="font-medium text-gray-900">Attachment {index + 1}</span>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600" />
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
                     </a>
                   ))}
                 </div>
               </div>
             )}
           </div>
-
-        
-          <div className="space-y-6">
           
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Venue Details</h2>
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <MapPin className="h-5 w-5 text-blue-600 mt-1" />
+          {/* Right Column: Event Details */}
+          <div className="space-y-8">
+            {/* Key Details Card */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
+              <h2 className="text-xl font-bold mb-6 text-gray-900">Event Details</h2>
+              
+              <div className="space-y-6">
+                {/* Date & Time */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-indigo-50 rounded-xl text-indigo-700">
+                    <CalendarIcon className="h-5 w-5" />
+                  </div>
                   <div>
-                    <span className="font-medium text-gray-900">Location</span>
-                    <p className="text-gray-700">{event.venue}</p>
+                    <h3 className="font-medium text-gray-900">Date & Time</h3>
+                    <p className="text-gray-600">{formatDate(event.date)}</p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-3">
-                  <Building className="h-5 w-5 text-blue-600 mt-1" />
+                
+                {/* Location */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-indigo-50 rounded-xl text-indigo-700">
+                    <MapPin className="h-5 w-5" />
+                  </div>
                   <div>
-                    <span className="font-medium text-gray-900">Mode</span>
-                    <p className="text-gray-700">{event.mode}</p>
+                    <h3 className="font-medium text-gray-900">Location</h3>
+                    <p className="text-gray-600">{event.venue}</p>
+                    <p className="text-sm text-indigo-600 font-medium mt-1">{event.mode}</p>
+                  </div>
+                </div>
+                
+                {/* Entry Fee */}
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-indigo-50 rounded-xl text-indigo-700">
+                    <Coins className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Entry Fee</h3>
+                    <p className="text-gray-600">₹{event.fees}</p>
                   </div>
                 </div>
               </div>
             </div>
-
-          
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Registration</h2>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+            
+            {/* Registration Card */}
+            <div className="bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl shadow-lg p-6 md:p-8">
+              <h2 className="text-xl font-bold mb-6">Registration</h2>
+              
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-indigo-200" />
                   <div>
-                    <span className="text-sm text-gray-600">Registration Deadline</span>
-                    <p className="font-medium text-gray-900">{formatDate(event.registrationDeadline)}</p>
+                    <p className="text-sm text-indigo-200">Registration Deadline</p>
+                    <p className="font-medium">{formatDate(event.registrationDeadline)}</p>
                   </div>
                 </div>
                 
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">
-                  Register Now
-                </button>
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 text-indigo-200" />
+                  <div>
+                    <p className="text-sm text-indigo-200">Participants</p>
+                    <p className="font-medium">{event.maxParticipants} spots available</p>
+                  </div>
+                </div>
                 
-                <p className="text-sm text-gray-600 text-center">
-                  {event.maxParticipants} spots available
-                </p>
+                <button className="w-full bg-white text-indigo-700 hover:bg-indigo-50 px-6 py-3 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 shadow-sm">
+                  Register Now <ArrowRight className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
