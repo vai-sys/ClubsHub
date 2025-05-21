@@ -5,9 +5,7 @@ exports.auth = async (req, res, next) => {
   try {
     let token;
 
-    if (req.cookies?.token) {
-      token = req.cookies.token;
-    }
+   
     
     const authHeader = req.headers.authorization;
     if (authHeader) {

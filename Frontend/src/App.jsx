@@ -21,6 +21,7 @@ import Calendar from "./components/Calender";
 import CreateAnnouncement from "./Pages/CreateAnnouncement";
 import EditAnnouncement from "./Pages/EditAnnouncement";
 import ListAnnouncement from "./Pages/ListAnnouncements";
+import CreateCompetition from "./Pages/CreateCompetition";
 
 
 
@@ -47,6 +48,15 @@ const AppContent = () => {
           }
         />
 
+         <Route
+          path="/competition/:id"
+          element={
+            <PrivateRoute roles={["clubAdmin"]}>
+              <CreateCompetition />
+            </PrivateRoute>
+          }
+        />
+
         <Route
           path="/admin-dashboard"
           element={
@@ -63,6 +73,7 @@ const AppContent = () => {
             </PrivateRoute>
           }
         />
+
 
 
 <Route  path='/faculty-coordinater-dashboard' 

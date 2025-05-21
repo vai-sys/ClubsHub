@@ -3,6 +3,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { UserRoles } = require('../config/constants');
 const Team = require('../models/Team');
+const mongoose = require('mongoose');
+
 
 
 const createCompetition = async (req, res) => {
@@ -25,7 +27,7 @@ const createCompetition = async (req, res) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.id;
-        console.log("userId",userId)
+        console.log("userId",decoded)
         
         const user = await User.findById(userId);
        
@@ -368,9 +370,7 @@ const registerForCompetition = async (req, res) => {
     }
 };
 
-/**
- * Get details of a specific competition
- */
+
 const getCompetitionById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -406,15 +406,12 @@ const getCompetitionById = async (req, res) => {
     }
 };
 
-/**
- * Update competition rounds
- */
 const updateCompetitionRounds = async (req, res) => {
     try {
         const { competitionId } = req.params;
         const { rounds } = req.body;
 
-        // Validate the token and get user ID
+       
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({ 
@@ -427,7 +424,7 @@ const updateCompetitionRounds = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.id;
         
-        // Find the user and check if they're a club admin
+       
         const user = await User.findById(userId);
         if (!user || user.role !== UserRoles.CLUB_ADMIN) {
             return res.status(403).json({
@@ -436,7 +433,7 @@ const updateCompetitionRounds = async (req, res) => {
             });
         }
 
-        // Find the competition
+      
         const competition = await Competition.findById(competitionId).populate('event');
         if (!competition) {
             return res.status(404).json({
@@ -445,7 +442,7 @@ const updateCompetitionRounds = async (req, res) => {
             });
         }
 
-        // Verify the event belongs to the admin's club
+      
         if (competition.event.createdBy.toString() !== userId) {
             return res.status(403).json({
                 success: false,
@@ -453,7 +450,7 @@ const updateCompetitionRounds = async (req, res) => {
             });
         }
 
-        // Update the rounds
+       
         competition.rounds = rounds;
         await competition.save();
 
@@ -489,9 +486,7 @@ const updateCompetitionRounds = async (req, res) => {
     }
 };
 
-/**
- * Set round status to live
- */
+
 const setRoundLiveStatus = async (req, res) => {
     try {
         const { competitionId, roundId } = req.params;
@@ -504,7 +499,7 @@ const setRoundLiveStatus = async (req, res) => {
             });
         }
 
-        // Validate the token and get user ID
+      
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({ 
@@ -561,7 +556,7 @@ const setRoundLiveStatus = async (req, res) => {
             });
         }
 
-        // Update the round status
+       
         competition.rounds[roundIndex].isLive = isLive;
         await competition.save();
 
@@ -589,9 +584,7 @@ const setRoundLiveStatus = async (req, res) => {
     }
 };
 
-/**
- * Get registered teams/participants for a competition
- */
+
 const getCompetitionParticipants = async (req, res) => {
     try {
         const { competitionId } = req.params;
@@ -649,9 +642,7 @@ const getCompetitionParticipants = async (req, res) => {
     }
 };
 
-/**
- * Add judges to a competition
- */
+
 const addJudgesToCompetition = async (req, res) => {
     try {
         const { competitionId } = req.params;
@@ -664,7 +655,7 @@ const addJudgesToCompetition = async (req, res) => {
             });
         }
 
-        // Validate the token and get user ID
+       
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({ 
@@ -686,7 +677,7 @@ const addJudgesToCompetition = async (req, res) => {
             });
         }
 
-        // Find the competition
+        
         const competition = await Competition.findById(competitionId).populate('event');
         if (!competition) {
             return res.status(404).json({
@@ -695,7 +686,7 @@ const addJudgesToCompetition = async (req, res) => {
             });
         }
 
-        // Verify the event belongs to the admin's club
+       
         if (competition.event.createdBy.toString() !== userId) {
             return res.status(403).json({
                 success: false,
@@ -703,7 +694,7 @@ const addJudgesToCompetition = async (req, res) => {
             });
         }
 
-        // Add judges to the competition
+        
         competition.judges = judges;
         await competition.save();
 
@@ -739,14 +730,12 @@ const addJudgesToCompetition = async (req, res) => {
     }
 };
 
-/**
- * Cancel registration for a competition
- */
+
 const cancelRegistration = async (req, res) => {
     try {
         const { competitionId } = req.params;
 
-        // Validate the token and get user ID
+     
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({ 
@@ -759,7 +748,7 @@ const cancelRegistration = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.id;
         
-        // Find the user
+        
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
@@ -768,7 +757,7 @@ const cancelRegistration = async (req, res) => {
             });
         }
 
-        // Find the competition
+      
         const competition = await Competition.findById(competitionId);
         if (!competition) {
             return res.status(404).json({
@@ -777,7 +766,7 @@ const cancelRegistration = async (req, res) => {
             });
         }
 
-        // Find the associated event
+       
         const event = await Event.findById(competition.event);
         if (!event) {
             return res.status(404).json({
@@ -786,7 +775,7 @@ const cancelRegistration = async (req, res) => {
             });
         }
 
-        // Check if the event has already started
+     
         if (new Date() > new Date(event.date)) {
             return res.status(400).json({
                 success: false,
@@ -899,7 +888,43 @@ const cancelRegistration = async (req, res) => {
     }
 };
 
+const getCompetitionByEventId = async (req, res) => {
+  try {
+    let { eventId } = req.params;
+    console.log("Raw eventId:", JSON.stringify(eventId));
+
+    eventId = eventId.trim().replace(/[\s\r\n]+/g, '');
+    console.log("Sanitized eventId:", JSON.stringify(eventId));
+
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      console.log("Final eventId failed validation:", eventId, "Length:", eventId.length);
+      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
+    }
+
+    const objectIdEventId = new mongoose.Types.ObjectId(eventId);
+
+    const competition = await Competition.findOne({ event: objectIdEventId }).lean();
+
+    if (!competition) {
+      return res.status(404).json({ success: false, message: 'Competition not found' });
+    }
+
+    return res.status(200).json({ success: true, data: competition });
+
+  } catch (error) {
+    console.error("Error in getCompetitionByEventId:", error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+
+
 module.exports = {
+    
     createCompetition,
     registerForCompetition,
     getCompetitionById,
@@ -907,5 +932,6 @@ module.exports = {
     setRoundLiveStatus,
     getCompetitionParticipants,
     addJudgesToCompetition,
-    cancelRegistration
+    cancelRegistration,
+   getCompetitionByEventId
 };

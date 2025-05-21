@@ -27,7 +27,8 @@ const createEvent = async (req, res) => {
 
     
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
+        const userId = decoded.id;
+        console.log(decoded.id)
         
         const user = await User.findById(userId);
         if (!user) {
@@ -168,7 +169,7 @@ const facultyApproval = async (req, res) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
+        const userId = decoded.id;
 
    
         const user = await User.findById(userId);
@@ -213,7 +214,7 @@ const facultyApproval = async (req, res) => {
 
      
         const updateData = {
-            'facultyApproval.approved': approved,
+            'facultyApproval.approved': true,
             'facultyApproval.remark': remark || '',
             'facultyApproval.approvedBy': userId,
             'facultyApproval.approvedAt': new Date(),
@@ -239,7 +240,8 @@ const facultyApproval = async (req, res) => {
             eventId,
             approvedBy: userId,
             approvalStatusRole: approved ? 'approved' : 'rejected',
-            role: 'facultyCoordinator'
+            role: 'facultyCoordinator',
+             remark: remark || ''
         });
 
         return res.status(200).json({
@@ -309,7 +311,7 @@ const superAdminApproval = async (req, res) => {
 
        
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
+        const userId = decoded.id;
 
        
         const user = await User.findById(userId);
@@ -436,7 +438,7 @@ const superAdminApproval = async (req, res) => {
 
 const getFacultyApprovedEvents = async (req, res) => {
     try {
-      // Authorization is already handled by middleware, so we can focus on business logic
+    
       const events = await Event.find({
         approvalStatus: 'FACULTY_APPROVED',
         'facultyApproval.approved': true
@@ -461,14 +463,34 @@ const getFacultyApprovedEvents = async (req, res) => {
       });
     }
   };
+
   const getPendingEventsForFaculty = async (req, res) => {
     try {
     
+      const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or missing Authorization header'
+            });
+        }
 
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: 'Token missing'
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
       
     
-      const userId = req.userId;
       
+      
+      console.log("req.userId (faculty):", userId);
+
       
       const clubs = await Club.find({ facultyCoordinater: userId });
       const clubIds = clubs.map(club => club._id);
@@ -705,7 +727,11 @@ const trackEventProgress = async (req, res) => {
 
 const getEventById = async (req, res) => {
     try {
-        const { id } = req.params;
+        let { id } = req.params;
+  
+
+    id = id.trim().replace(/[\s\r\n]+/g, '');
+   
 
         const event = await Event.findById(id)
             .populate([
@@ -737,6 +763,125 @@ const getEventById = async (req, res) => {
 };
 
 
+
+const registerForEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(id);
+
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or missing Authorization header',
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
+       
+
+        // Find the user
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+
+        // Find the event
+        const event = await Event.findById(id);
+        console.log("event",event)
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found',
+            });
+        }
+
+     
+        if (new Date() > new Date(event.registrationDeadline)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Registration deadline has passed',
+            });
+        }
+
+        // Check if event is canceled
+        if (event.status === 'CANCELLED') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot register for a canceled event',
+            });
+        }
+
+        // Check max participants
+        if (event.maxParticipants && event.registeredParticipants.length >= event.maxParticipants) {
+            return res.status(400).json({
+                success: false,
+                message: 'Maximum participant limit reached',
+            });
+        }
+
+        // Check if user is already registered for the event
+        const isAlreadyRegistered = event.registeredParticipants.some(p => p.userId.toString() === userId);
+        if (isAlreadyRegistered) {
+            return res.status(400).json({
+                success: false,
+                message: 'You are already registered for this event',
+            });
+        }
+
+        // Register the individual for the event
+        await Event.findByIdAndUpdate(
+            event._id,
+            {
+                $push: {
+                    registeredParticipants: {
+                        userId: userId,
+                        registrationDate: new Date(),
+                        status: 'CONFIRMED',
+                    },
+                },
+            }
+        );
+       
+
+        return res.status(200).json({
+            success: true,
+            message: 'Successfully registered for the event',
+            data: {
+                participant: {
+                    name: user.name,
+                    email: user.email,
+                    userId: user._id,
+                },
+                eventName: event.name,
+            },
+        });
+    } catch (error) {
+        console.error('Event registration error:', error);
+
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token',
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Error registering for event',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+        });
+    }
+};
+
+
+
 module.exports = {
     createEvent,
     facultyApproval,
@@ -745,7 +890,8 @@ module.exports = {
     getPendingEventsForFaculty,
     getApprovedEvents,
     trackEventProgress,
-    getEventById
+    getEventById,
+    registerForEvent
     
 };
 

@@ -8,6 +8,7 @@ const { createEvent,
     getPendingEventsForFaculty,
     getApprovedEvents,
     getEventById,
+    registerForEvent,
     trackEventProgress } = require('../Controller/eventController');
 const { uploadEventFiles } = require('../middleware/uploadMiddleware');
 
@@ -24,6 +25,7 @@ router.get('/pending-faculty',auth,authorize(['facultyCoordinator']), getPending
 router.get('/approved', auth,authorize(['superAdmin','clubAdmin','facultyCoordinator','member']),getApprovedEvents);
 router.get('/track-progress',auth,authorize(['clubAdmin']), trackEventProgress);
 router.get('/:id',auth,authorize(['superAdmin','clubAdmin','facultyCoordinator','member']),getEventById)
+router.post('/:id/register',auth,authorize(['member']),registerForEvent);
 
 
 module.exports = router;

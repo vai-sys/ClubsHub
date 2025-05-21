@@ -348,3 +348,48 @@ exports.updateProfilePicture = async (req, res) => {
     });
   }
 };
+
+
+exports.searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    // Validate query parameter
+    if (!query || query.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query must be at least 3 characters long'
+      });
+    }
+
+    // Extract user ID from auth token to exclude current user from results
+    const currentUserId = req.user.id;
+
+    // Create regex for case-insensitive search
+    const searchRegex = new RegExp(query, 'i');
+
+    // Search for users by name or email, excluding the current user
+    const users = await User.find({
+      _id: { $ne: currentUserId }, // Exclude current user
+      $or: [
+        { name: searchRegex },
+        { email: searchRegex }
+      ]
+    })
+    .select('_id name email profileImage') // Select only necessary fields
+    .limit(10); // Limit results for performance
+
+    return res.status(200).json({
+      success: true,
+      message: 'Users retrieved successfully',
+      data: users
+    });
+  } catch (error) {
+    console.error('User search error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error searching for users',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
