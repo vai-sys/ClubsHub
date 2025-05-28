@@ -22,6 +22,7 @@ import CreateAnnouncement from "./Pages/CreateAnnouncement";
 import EditAnnouncement from "./Pages/EditAnnouncement";
 import ListAnnouncement from "./Pages/ListAnnouncements";
 import CreateCompetition from "./Pages/CreateCompetition";
+import MyActivity from "./Pages/Myactivity";
 
 
 
@@ -116,6 +117,14 @@ const AppContent = () => {
   element={
     <PrivateRoute roles={["clubAdmin", "superAdmin"]}>
       <CreateAnnouncement />
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/my-activity"
+  element={
+    <PrivateRoute  roles={["superAdmin", "member", "clubAdmin","facultyCoordinator"]}>
+      <MyActivity />
     </PrivateRoute>
   }
 />

@@ -85,7 +85,7 @@ const CompetitionSchema = new Schema({
   judges: [{
     name: { type: String, required: true },
     profile: { type: String }, 
-    // userId: { type: Schema.Types.ObjectId, ref: 'User' }  
+  
   }],
   evaluationCriteria: { type: String }, 
   rules: [{ type: String }],  

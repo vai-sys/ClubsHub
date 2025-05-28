@@ -50,13 +50,13 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       const cachedUser = localStorage.getItem('user');
       
-      // First try to set user from localStorage if available
+  
       if (cachedUser) {
         setUser(JSON.parse(cachedUser));
       }
       
       if (token) {
-        // Then refresh from server
+     
         const response = await axios.get('/auth/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         const userData = response.data.user;
         setUser(userData);
         
-        // Update the cached user
+        
         localStorage.setItem('user', JSON.stringify(userData));
         
         console.log('User set after fetching profile:', userData);
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Failed to fetch profile:', error.response?.data?.message || error.message);
       logout();
     } finally {
-      // This finally block should be outside the if condition
+    
       setLoading(false);
     }
   }, [logout]);

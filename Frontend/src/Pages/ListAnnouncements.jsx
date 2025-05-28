@@ -69,7 +69,7 @@ const ListAnnouncement = () => {
       
       for (const clubId of clubIds) {
         try {
-          const response = await api.get(`/club/${clubId}`);
+          const response = await api.get(`/club`);
           if (response.data && response.data.data) {
             clubsData[clubId] = response.data.data;
           }

@@ -2,6 +2,7 @@ const { JWT_SECRET, JWT_EXPIRATION, UserRoles } = require('../config/constants')
 const Club = require("../models/Club");
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const mongoose=require("mongoose")
 
 const getTokenFromRequest = (req) => {
     const authHeader = req.headers.authorization;
@@ -276,11 +277,71 @@ const clubAdminUsingID= async (req, res) => {
       res.status(500).json({ message: 'Internal Server Error' });
     }
   }
+const getClubDetailsById = async (req, res) => {
+  try {
+    const clubId = req.params.clubId; 
+    if (!mongoose.Types.ObjectId.isValid(clubId)) {
+      return res.status(400).json({ error: 'Invalid club ID' });
+    }
 
+   
+    const club = await Club.findById(clubId);
+    if (!club) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
+   
+    return res.status(200).json({ club });
+  } catch (error) {
+    console.error('Error getting club by ID:', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+const getUserClubAffiliationsWithDetails = async (req, res) => {
+  const { userId } = req.params;
+  console.log('User ID:', userId);
+  
+  try {
+    const user = await User.findById(userId)
+      .populate({
+        path: 'clubAffiliations.clubId',
+        select: 'name description clubLogo clubCategory isActive',
+      })
+      .select('clubAffiliations');
+    
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log('User Club Affiliations with Club Details:', user.clubAffiliations);
+    
+    return res.status(200).json({
+      success: true,
+      data: user.clubAffiliations,
+      message: 'Club affiliations retrieved successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error fetching club affiliations:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
 module.exports = {
     getAllClubs,
     createClub,
     addMemberToClub,
     getClubDetails,
-    clubAdminUsingID 
+    clubAdminUsingID ,
+    getClubDetailsById,
+    getUserClubAffiliationsWithDetails
 };

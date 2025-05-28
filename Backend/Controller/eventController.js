@@ -5,6 +5,7 @@ const jwt=require("jsonwebtoken")
 const {JWT_SECRET} =require('../config/constants')
 const Club =require('../models/Club')
 const { UserRoles } = require('../config/constants');
+const mongoose=require("mongoose");
 
 const createEvent = async (req, res) => {
     try {
@@ -782,7 +783,7 @@ const registerForEvent = async (req, res) => {
         const userId = decoded.id;
        
 
-        // Find the user
+      
         const user = await User.findById(userId);
         
         if (!user) {
@@ -792,7 +793,7 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        // Find the event
+      
         const event = await Event.findById(id);
         console.log("event",event)
         if (!event) {
@@ -810,7 +811,7 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        // Check if event is canceled
+       
         if (event.status === 'CANCELLED') {
             return res.status(400).json({
                 success: false,
@@ -818,7 +819,7 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        // Check max participants
+       
         if (event.maxParticipants && event.registeredParticipants.length >= event.maxParticipants) {
             return res.status(400).json({
                 success: false,
@@ -826,7 +827,7 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        // Check if user is already registered for the event
+        
         const isAlreadyRegistered = event.registeredParticipants.some(p => p.userId.toString() === userId);
         if (isAlreadyRegistered) {
             return res.status(400).json({
@@ -835,7 +836,7 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        // Register the individual for the event
+        
         await Event.findByIdAndUpdate(
             event._id,
             {
@@ -881,6 +882,37 @@ const registerForEvent = async (req, res) => {
 };
 
 
+const getParticipatedEvents = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const events = await Event.find({
+      registeredParticipants: {
+        $elemMatch: {
+          userId: userId,
+          status: { $in: ['CONFIRMED', 'ATTENDED'] }
+        }
+      }
+    })
+    .populate('clubId', 'name') 
+    .select('name date venue eventType mode clubId') 
+    .sort({ date: -1 });
+
+    return res.json({
+      message: "User registered in events",
+      events
+    });
+  } catch (error) {
+    console.error('Error fetching participated events:', error);
+    return res.status(500).json({
+      message: 'Server error while fetching participated events',
+      error: error.message
+    });
+  }
+};
+
+
+
 
 module.exports = {
     createEvent,
@@ -891,7 +923,8 @@ module.exports = {
     getApprovedEvents,
     trackEventProgress,
     getEventById,
-    registerForEvent
+    registerForEvent,
+    getParticipatedEvents
     
 };
 

@@ -149,8 +149,12 @@ exports.login = async (req, res) => {
 
 exports.getUserProfile = async (req, res) => {
   try {
+   
+    
     const token = getTokenFromRequest(req);
-    console.log("token", token);
+   
+  
+  
   
     if (!token) {
       return res.status(401).json({ message: 'Not authenticated' });
@@ -168,6 +172,7 @@ exports.getUserProfile = async (req, res) => {
     res.json({
       message: 'User profile fetched successfully',
       user: {
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
