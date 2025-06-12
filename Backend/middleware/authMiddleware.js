@@ -28,6 +28,7 @@ exports.auth = async (req, res, next) => {
       const decoded = jwt.verify(token, JWT_SECRET);
      
       
+      
       req.user = {
         id: decoded.id,
         email: decoded.email,

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const JoinRequest=require("../models/JoinRequest")
 
 
 const { 
@@ -44,7 +45,7 @@ router.post(
 router.post(
     '/:clubId/join-request',
     auth,
-    authorize(['member','clubAdmin']),
+    authorize(['member']),
     sendJoinRequest
 );
 

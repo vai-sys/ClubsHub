@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
@@ -8,28 +9,39 @@ import { Menu, X, Bell, User, LogOut, Calendar, Users, Newspaper, Activity, Book
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext); 
 
-  const navItems = [
+
+  const baseNavItems = [
     { name: 'Events', icon: <Calendar className="w-5 h-5" />, path: '/events' },
     { name: 'Clubs', icon: <Users className="w-5 h-5" />, path: '/clubs' },
-
     { name: 'Announcements', icon: <Newspaper className="w-5 h-5" />, path: '/announcements' },
+  ];
+
+
+  const studentNavItems = [
     { name: 'My Activity', icon: <Activity className="w-5 h-5" />, path: '/my-activity' },
   ];
 
+ 
+  const navItems = [
+    ...baseNavItems,
+   
+    ...( user?.role === 'member' ? studentNavItems : [])
+  ];
+
   return (
-    < >
-      <nav className="sticky top-0 z-50 bg-white shadow-lg ">
+    <>
+      <nav className="sticky top-0 z-50 bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
-         
+           
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <span className="text-2xl font-bold text-indigo-600">ClubsHub</span>
               </div>
 
-             
+              
               <div className="hidden md:flex md:ml-6 md:space-x-4">
                 {navItems.map((item) => (
                   <Link
@@ -44,7 +56,7 @@ const Navbar = () => {
               </div>
             </div>
 
-          
+         
             <div className="flex items-center">
               <button className="p-2 text-gray-600 hover:text-indigo-600 rounded-full hover:bg-gray-100">
                 <Bell className="h-6 w-6" />
@@ -81,7 +93,7 @@ const Navbar = () => {
                 )}
               </div>
 
-          
+         
               <div className="flex items-center md:hidden ml-4">
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -98,7 +110,7 @@ const Navbar = () => {
           </div>
         </div>
 
- 
+   
         {isMobileMenuOpen && (
           <div className="md:hidden">
             <div className="pt-2 pb-3 space-y-1">
@@ -117,9 +129,8 @@ const Navbar = () => {
         )}
       </nav>
 
-    
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-       
+      
       </div>
     </>
   );

@@ -11,10 +11,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post('/auth/login', { email, password });
       
-      console.log('Login response:', response.data);
+    
       
       const userData = response.data.user;
-      console.log("userData",userData)
+     
       const token = response.data.token;
       
       setUser(userData);
@@ -23,8 +23,7 @@ export const AuthProvider = ({ children }) => {
       
       localStorage.setItem('user', JSON.stringify(userData));
       
-      console.log('Token in localStorage after login:', localStorage.getItem('token'));
-      console.log('User set after login:', userData);
+     
 
       return userData;
     } catch (error) {
@@ -61,7 +60,7 @@ export const AuthProvider = ({ children }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log('Profile response:', response.data);
+     
 
         const userData = response.data.user;
         setUser(userData);
@@ -69,7 +68,7 @@ export const AuthProvider = ({ children }) => {
         
         localStorage.setItem('user', JSON.stringify(userData));
         
-        console.log('User set after fetching profile:', userData);
+       
       } else {
         console.log('No token found in localStorage');
       }

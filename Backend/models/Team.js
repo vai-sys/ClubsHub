@@ -21,6 +21,9 @@ const teamSchema = new mongoose.Schema({
         ref: 'Competition',
         required: true
     },
+    paymentStatus: {
+     type:Boolean
+    } ,
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event',

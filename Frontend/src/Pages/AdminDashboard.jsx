@@ -1,26 +1,42 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { 
-  CheckCircle, XCircle, Clock, AlertCircle, Calendar, 
+  CheckCircle, XCircle, Clock, AlertCircle,  
   Users, MapPin, MessageCircle, ChevronDown, ChevronUp,
-  Clock3, IndianRupee, Tag, Building, Layers
+  Clock3, IndianRupee, Tag,  Layers, UserPlus,
+  UserCheck, UserX,  Mail, Check, X,User,
+
+  Phone,
+  Calendar,
+  Building,
+  GraduationCap,
+  ClipboardList,
 } from 'lucide-react';
 import api from '../api';
+import RegisteredTeam from './RegisteredTeam';
+import ParticipantsList from './ParticipantsList'
+import JoinRequestsList from './JoinRequestList';
 
-const STATUS_COLORS = {
-  PENDING: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-  FACULTY_APPROVED: 'bg-blue-100 text-blue-800 border border-blue-300',
-  SUPER_ADMIN_APPROVED: 'bg-green-100 text-green-800 border border-green-300',
-  REJECTED: 'bg-red-100 text-red-800 border border-red-300'
+
+const StatusBadge = ({ status }) => {
+  const STATUS_COLORS = {
+    PENDING: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+    FACULTY_APPROVED: 'bg-blue-100 text-blue-800 border border-blue-300',
+    SUPER_ADMIN_APPROVED: 'bg-green-100 text-green-800 border border-green-300',
+    REJECTED: 'bg-red-100 text-red-800 border border-red-300',
+    APPROVED: 'bg-green-100 text-green-800 border border-green-300',
+    REQUESTED: 'bg-purple-100 text-purple-800 border border-purple-300'
+  };
+
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[status]}`}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  );
 };
-
-const StatusBadge = ({ status }) => (
-  <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[status]}`}>
-    {status.replace(/_/g, ' ')}
-  </span>
-);
 
 const EventMetadata = ({ icon: Icon, label, value, className = '' }) => (
   <div className={`flex items-center space-x-2 ${className}`}>
@@ -29,6 +45,25 @@ const EventMetadata = ({ icon: Icon, label, value, className = '' }) => (
     {label && <span className="text-xs text-gray-500">({label})</span>}
   </div>
 );
+
+const ActionButton = ({ icon: Icon, label, onClick, variant = 'default' }) => {
+  const variants = {
+    default: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    success: 'bg-green-600 hover:bg-green-700 text-white'
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${variants[variant]}`}
+    >
+      <Icon className="w-4 h-4" />
+      <span>{label}</span>
+    </button>
+  );
+};
 
 const TimelineStep = ({ title, status, date, remarks, reviewer, isLast, role }) => {
   const [isRemarksExpanded, setIsRemarksExpanded] = useState(false);
@@ -117,7 +152,6 @@ const EventTimelineCard = ({ event, isExpanded, onToggle }) => {
   };
 
   const EventTypeIcon = getEventTypeIcon(event.eventType);
-  // console.log("daaata",event.approvalHistory?.find(h => h.role === 'superAdmin')?.approver?.name)
 
   const formatDuration = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -151,7 +185,6 @@ const EventTimelineCard = ({ event, isExpanded, onToggle }) => {
       reviewer: event.approvalHistory?.find(h => h.role === 'superAdmin')?.approver?.name,
       role: 'Super Admin',
       remarks: event.approvalHistory?.find(h => h.role === 'superAdmin')?.remark
-    
     }
   ];
 
@@ -204,10 +237,117 @@ const EventTimelineCard = ({ event, isExpanded, onToggle }) => {
   );
 };
 
+// // ==================== Club Join Request Components ====================
+// const JoinRequestCard = ({ request, onApprove, onReject }) => {
+//   return (
+//     <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+//       <div className="flex justify-between items-start">
+//         <div>
+//           <h3 className="font-medium text-gray-900">{request.user.name}</h3>
+//           <p className="text-sm text-gray-600">{request.user.email}</p>
+//           <div className="mt-2 flex items-center space-x-2 text-sm">
+//             <UserPlus className="w-4 h-4 text-gray-500" />
+//             <span>Requested on: {new Date(request.requestedAt).toLocaleDateString()}</span>
+//           </div>
+//         </div>
+//         <StatusBadge status={request.status} />
+//       </div>
+      
+//       {request.message && (
+//         <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-100">
+//           <p className="text-sm text-gray-600">{request.message}</p>
+//         </div>
+//       )}
+      
+//       <div className="mt-4 flex space-x-2">
+//         <ActionButton 
+//           icon={Check} 
+//           label="Approve" 
+//           variant="success" 
+//           onClick={() => onApprove(request._id)} 
+//         />
+//         <ActionButton 
+//           icon={X} 
+//           label="Reject" 
+//           variant="danger" 
+//           onClick={() => onReject(request._id)} 
+//         />
+//       </div>
+//     </div>
+//   );
+// };
+
+// const ClubJoinRequests = () => {
+//   // Demo data for club join requests
+//   const [requests, setRequests] = useState([
+//     {
+//       _id: '1',
+//       user: { name: 'John Doe', email: 'john@example.com' },
+//       requestedAt: '2023-05-15T10:30:00Z',
+//       status: 'REQUESTED',
+//       message: 'I would like to join this club to participate in events and contribute to activities.'
+//     },
+//     {
+//       _id: '2',
+//       user: { name: 'Jane Smith', email: 'jane@example.com' },
+//       requestedAt: '2023-05-18T14:45:00Z',
+//       status: 'REQUESTED',
+//       message: 'Interested in the technical workshops your club organizes.'
+//     },
+//     {
+//       _id: '3',
+//       user: { name: 'Robert Johnson', email: 'robert@example.com' },
+//       requestedAt: '2023-05-20T09:15:00Z',
+//       status: 'REQUESTED'
+//     }
+//   ]);
+
+//   const handleApprove = (id) => {
+//     setRequests(requests.map(req => 
+//       req._id === id ? { ...req, status: 'APPROVED' } : req
+//     ));
+//   };
+
+//   const handleReject = (id) => {
+//     setRequests(requests.map(req => 
+//       req._id === id ? { ...req, status: 'REJECTED' } : req
+//     ));
+//   };
+
+//   return (
+//     <div className="space-y-4">
+//       <h2 className="text-2xl font-bold mb-4 flex items-center">
+//         <Mail className="w-6 h-6 mr-2 text-blue-600" />
+//         Club Join Requests
+//       </h2>
+      
+//       {requests.length === 0 ? (
+//         <p className="text-gray-500">No pending requests</p>
+//       ) : (
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//           {requests.filter(r => r.status === 'REQUESTED').map(request => (
+//             <JoinRequestCard 
+//               key={request._id}
+//               request={request}
+//               onApprove={handleApprove}
+//               onReject={handleReject}
+//             />
+//           ))}
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+
+
+
+
+
 const AdminDashboard = () => {
   const [events, setEvents] = useState({ all: [], categorized: {} });
   const [counts, setCounts] = useState({});
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('events');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedEvents, setExpandedEvents] = useState(new Set());
@@ -245,7 +385,7 @@ const AdminDashboard = () => {
     });
   };
 
-  const filteredEvents = (activeTab === 'all' ? events.all : events.categorized[activeTab] || [])
+  const filteredEvents = (events.all || [])
     .filter(event => 
       event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.clubId?.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -263,7 +403,7 @@ const AdminDashboard = () => {
     return (
       <div className="max-w-6xl mx-auto p-8">
         <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-100">
-          <p className="font-medium">Error loading events</p>
+          <p className="font-medium">Error loading dashboard</p>
           <p className="mt-1 text-sm">{error}</p>
         </div>
       </div>
@@ -271,13 +411,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Event Timeline Dashboard</h1>
+        <h1 className="text-3xl font-bold">Club Admin Dashboard</h1>
         <div className="relative">
           <input
             type="text"
-            placeholder="Search events..."
+            placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -285,56 +425,56 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
-          <p className="text-gray-600 text-sm">Total Events</p>
-          <p className="text-3xl font-bold mt-2">{counts.total || 0}</p>
-        </div>
-        <div className="bg-blue-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
-          <p className="text-blue-600 text-sm">Faculty Approved</p>
-          <p className="text-3xl font-bold mt-2">{counts.facultyApproved || 0}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
-          <p className="text-yellow-600 text-sm">Pending Review</p>
-          <p className="text-3xl font-bold mt-2">{counts.pending || 0}</p>
-        </div>
-        <div className="bg-red-50 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
-          <p className="text-red-600 text-sm">Rejected</p>
-          <p className="text-3xl font-bold mt-2">{counts.rejected || 0}</p>
-        </div>
-      </div>
-
       <div className="flex space-x-4 mb-8">
-        {['all', 'pending', 'facultyApproved', 'superAdminApproved', 'rejected'].map((tab) => (
+        {[
+          { id: 'events', label: 'Events', icon: Calendar },
+          { id: 'teams', label: 'Registered Teams', icon: Users },
+          { id: 'requests', label: 'Join Requests', icon: UserPlus },
+          { id: 'participants', label: 'Participants', icon: ClipboardList }
+        ].map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2.5 rounded-lg transition-all duration-200 font-medium ${
-              activeTab === tab 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-6 py-2.5 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 ${
+              activeTab === tab.id 
                 ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700' 
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
             }`}
           >
-            {tab.split(/(?=[A-Z])/).join(' ')}
+            <tab.icon className="w-5 h-5" />
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
-      <div className="space-y-6">
-        {filteredEvents.map(event => (
-          <EventTimelineCard 
-            key={event._id}
-            event={event}
-            isExpanded={expandedEvents.has(event._id)}
-            onToggle={() => toggleEventExpansion(event._id)}
-          />
-        ))}
-        
-        {filteredEvents.length === 0 && (
-          <div className="text-center py-12">
-           <p className="text-gray-500">No events found</p>
-          </div>
+      <div className="space-y-8">
+        {activeTab === 'events' && (
+          <>
+            <h2 className="text-2xl font-bold mb-4 flex items-center">
+              <Calendar className="w-6 h-6 mr-2 text-blue-600" />
+              Event Approval Workflow
+            </h2>
+            
+            {filteredEvents.length === 0 ? (
+              <p className="text-gray-500">No events found</p>
+            ) : (
+              <div className="space-y-6">
+                {filteredEvents.map(event => (
+                  <EventTimelineCard 
+                    key={event._id}
+                    event={event}
+                    isExpanded={expandedEvents.has(event._id)}
+                    onToggle={() => toggleEventExpansion(event._id)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
+
+        {activeTab === 'teams' && <RegisteredTeam/>}
+        {activeTab === 'requests' && <JoinRequestsList />}
+        {activeTab === 'participants' && <ParticipantsList />}
       </div>
     </div>
   );

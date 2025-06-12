@@ -54,7 +54,7 @@ const Login = () => {
           navigate('/superAdmin-dashboard');
           break;
         case 'member':
-          navigate('/member-dashboard');
+          navigate('/events');
           break;
         case 'clubAdmin':
           navigate('/admin-dashboard');

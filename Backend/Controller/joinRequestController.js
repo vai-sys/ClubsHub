@@ -93,7 +93,8 @@ const getTokenFromRequest = (req) => {
 
 const getAllrequests=async (req,res)=>{
     const { clubId } = req.params;
-    const { leadId } = req.body;
+    const  leadId  = req.user.id;
+  
   
     try {
       const club = await Club.findById(clubId);
@@ -103,7 +104,7 @@ const getAllrequests=async (req,res)=>{
         return res.status(403).json({ message: "Only the club lead can view requests" });
       }
   
-      const requests = await JoinRequest.find({ clubId, status: "pending" }).populate('userId', 'name email');
+      const requests = await JoinRequest.find({ clubId, status: "pending" }).populate('userId', 'name email image department year');
       res.status(200).json(requests);
     } catch (error) {
       res.status(500).json({ message: "Server error", error });
@@ -113,7 +114,8 @@ const getAllrequests=async (req,res)=>{
 
 const respondToJoinRequest = async (req, res) => {
     const { clubId } = req.params;
-    const { requestId, action, leadId } = req.body;
+    const { requestId, action } = req.body;
+    const leadId=req.user.id;
 
     
     if (!clubId || !requestId || !action || !leadId) {
@@ -218,81 +220,38 @@ const respondToJoinRequest = async (req, res) => {
         });
     }
 };
-
-
 const getUserJoinReq = async (req, res) => {
-    try {
-      
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Invalid or missing Authorization header' });
-      }
-  
-      
-      const token = authHeader.split(' ')[1];
-      console.log(token)
-      if (!token) {
-        return res.status(401).json({ message: 'Token missing' });
-      }
-  
-      
-      const decoded = jwt.verify(token, JWT_SECRET);
-      console.log(decoded)
-      
-      
-      const userRequests = await JoinRequest.findbyId(decoded.userId)    
-        .sort({ requestDate: -1 });          
-  
-      if (!userRequests || userRequests.length === 0) {
-        return res.status(404).json({ 
-          success: false,
-          message: 'No join requests found for the user' 
-        });
-      }
-  
-     
-      const formattedRequests = userRequests.map(request => ({
-        requestId: request._id,
-        clubId: request.clubId._id,
-        clubName: request.clubId.name,
-        clubLogo: request.clubId.clubLogo,
-        status: request.status,
-        requestDate: request.requestDate,
-        userId: request.userId._id,
-        userName: request.userId.name,
-        userEmail: request.userId.email
-      }));
-  
-      res.status(200).json({
-        success: true,
-        requests: formattedRequests
-      });
-  
-    } catch (error) {
-      console.error('Error fetching user join requests:', error);
-      
-      if (error.name === 'JsonWebTokenError') {
-        return res.status(401).json({ 
-          success: false,
-          message: 'Invalid token' 
-        });
-      }
-      
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({ 
-          success: false,
-          message: 'Token expired' 
-        });
-      }
-  
-      res.status(500).json({ 
-        success: false,
-        message: 'Internal Server Error',
-        error: error.message 
-      });
-    }
-  };
-  
+  try {
+    
+    const rawRequests = await JoinRequest.find({ userId: req.user.id });
+    console.log("Raw Join Requests:", rawRequests);
+
+    const requests = await JoinRequest.find({ userId: req.user.id })
+      .populate("clubId")
+      .populate("userId");
+
+    console.log(" Populated Join Requests:", requests);
+
+ 
+    requests.forEach((req, index) => {
+      console.log(`Request ${index + 1} - clubId:`, req.clubId);
+    });
+
+    res.status(200).json({
+      success: true,
+      data: requests,
+    });
+  } catch (error) {
+    console.error(" Error in getAllJoinRequestsForUser:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+
 
 
 

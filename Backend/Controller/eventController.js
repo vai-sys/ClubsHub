@@ -894,7 +894,7 @@ const getParticipatedEvents = async (req, res) => {
         }
       }
     })
-    .populate('clubId', 'name') 
+    .populate('clubId', 'name clubLogo') 
     .select('name date venue eventType mode clubId') 
     .sort({ date: -1 });
 
@@ -914,6 +914,128 @@ const getParticipatedEvents = async (req, res) => {
 
 
 
+
+
+
+const getAllRegisteredTeamsForClub = async (req, res) => {
+  try {
+    const { clubId } = req.params;
+
+    const events = await Event.find({ clubId })
+      .populate('registeredParticipants.userId registeredParticipants.teamId')
+      .lean();
+
+    const teamsMap = new Map();
+
+    for (const event of events) {
+      for (const participant of event.registeredParticipants || []) {
+        if (!participant || !participant.teamId || !participant.userId) continue;
+
+        const teamId = participant.teamId._id?.toString() || participant.teamId?.toString();
+
+        if (!teamsMap.has(teamId)) {
+          teamsMap.set(teamId, {
+            _id: teamId,
+            name: participant.teamId.name || "Unnamed Team",
+            event: {
+              _id: event._id,
+              name: event.name,
+            },
+            paymentStatus: participant.teamId.paymentStatus || false,
+            registeredAt: participant.registrationDate || null,
+            members: [],
+          });
+        }
+
+        const team = teamsMap.get(teamId);
+
+        team.members.push({
+          name: participant.userId.name,
+          email: participant.userId.email,
+           role: participant.isTeamLeader ? "Leader" : "Member",
+          image:participant.userId.image
+        });
+      }
+    }
+
+    const teams = Array.from(teamsMap.values());
+
+    res.status(200).json({ teams });
+  } catch (error) {
+    console.error("Error fetching registered teams:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+const getClubEventParticipants = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+  
+    const club = await Club.findOne({ clubLeadId: userId });
+    if (!club) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Club not found or you're not the lead" 
+      });
+    }
+
+   
+    const events = await Event.find({ clubId: club._id })
+      .populate({
+        path: 'registeredParticipants.userId',
+        select: 'name email phone college department year image'
+      })
+      .lean();
+
+
+    const eventParticipants = events.map(event => {
+      
+      const participants = event.registeredParticipants?.map(p => ({
+        userId: p.userId?._id || null,
+        name: p.userId?.name || 'Unknown',
+        email: p.userId?.email || 'N/A',
+        phone: p.userId?.phone || 'N/A',
+        college: p.userId?.college || 'N/A',
+        department: p.userId?.department || 'N/A',
+        year: p.userId?.year || 'N/A',
+        image: p.userId?.image || null,
+        status: p.status || "PENDING",
+        isTeamLeader: p.isTeamLeader || false,
+        teamId: p.teamId || null,
+        registrationDate: p.registrationDate || new Date()
+      })) || [];
+
+      return {
+        eventId: event._id,
+        eventName: event.name,
+        participants
+      };
+    });
+
+    return res.status(200).json({ 
+      success: true,
+      clubId: club._id, 
+      clubName: club.name, 
+      eventParticipants 
+    });
+
+  } catch (error) {
+    console.error("Error fetching participants:", error);
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal Server Error",
+      error: error.message 
+    });
+  }
+};
+
+
+
+
+
 module.exports = {
     createEvent,
     facultyApproval,
@@ -924,7 +1046,9 @@ module.exports = {
     trackEventProgress,
     getEventById,
     registerForEvent,
-    getParticipatedEvents
+    getParticipatedEvents,
+   getAllRegisteredTeamsForClub,
+  getClubEventParticipants
     
 };
 

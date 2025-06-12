@@ -307,7 +307,7 @@ const getUserClubAffiliationsWithDetails = async (req, res) => {
     const user = await User.findById(userId)
       .populate({
         path: 'clubAffiliations.clubId',
-        select: 'name description clubLogo clubCategory isActive',
+        select: 'name description clubLogo clubCategory isActive facultyCoordinater',
       })
       .select('clubAffiliations');
     
