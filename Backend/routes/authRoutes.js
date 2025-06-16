@@ -11,8 +11,10 @@ const {
   getUserProfile,
   getUserDetails,
   getFacultyDetails,
+  getEligibleUsers,
   searchUsers,
-  updateProfilePicture
+  updateProfilePicture,
+  getAllUsers
 } = require('../Controller/authController');
 
 const { auth, authorize } = require('../middleware/authMiddleware');
@@ -34,5 +36,7 @@ router.post('/update-profile-picture',
 
 router.get('/get-user-details', auth, getUserDetails);
 router.get('/search', auth, authorize(['member', 'superAdmin', 'clubAdmin', 'facultyCoordinator']), searchUsers);
+router.get('/all-users',auth,authorize(['superAdmin']),getAllUsers);
+router.get('/eligible-users',auth,authorize(['superAdmin']),getEligibleUsers)
 
 module.exports = router;

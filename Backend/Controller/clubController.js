@@ -168,78 +168,100 @@ const createClub = async (req, res) => {
     }
 };
 
-const addMemberToClub = async (req, res) => {
+const assignRoleToClubMember = async (req, res) => {
     try {
-        const { clubId, userId, role = 'member' } = req.body;
+        const { clubId, userId, role } = req.body;
+        const requestingUser = req.user;
 
-        if (!clubId || !userId) {
-            return res.status(400).json({
-                message: 'Club ID and user ID are required'
+       
+        if (requestingUser.role !== 'superAdmin') {
+            return res.status(403).json({
+                message: 'Only super admins can assign roles'
             });
         }
 
-        if (!['clubAdmin', 'member', 'superAdmin','facultyCoordinator'].includes(role)) {
-            return res.status(400).json({ message: 'Invalid role. Allowed roles are admin and member.' });
+        
+        if (!clubId || !userId || !role) {
+            return res.status(400).json({
+                message: 'Club ID, User ID, and Role are required'
+            });
         }
 
-        const club = await Club.findOne({
-            _id: clubId,
-            isActive: true
-        });
+        const validRoles = ['clubAdmin', 'facultyCoordinator', 'member', 'superAdmin'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({
+                message: `Invalid role. Allowed roles are: ${validRoles.join(', ')}`
+            });
+        }
+
+      
+        const [club, user] = await Promise.all([
+            Club.findOne({ _id: clubId, isActive: true }),
+            User.findOne({ _id: userId, isActive: true })
+        ]);
 
         if (!club) {
             return res.status(404).json({ message: 'Club not found or inactive' });
         }
 
-        const user = await User.findOne({
-            _id: userId,
-            isActive: true
-        });
-
         if (!user) {
             return res.status(404).json({ message: 'User not found or inactive' });
         }
 
-        const existingMember = club.clubMembers.find(
+       
+        const alreadyMember = club.clubMembers.some(
             member => member.student.toString() === userId
         );
 
-        if (existingMember) {
-            return res.status(400).json({ message: 'User is already a member of this club' });
+        if (alreadyMember) {
+            return res.status(400).json({ 
+                message: 'User is already a member of this club'
+            });
         }
 
+        const joinedAt = new Date();
+
+      
         club.clubMembers.push({
             student: userId,
             role: role,
-            joinedAt: new Date()
+            joinedAt,
+            addedBy: requestingUser._id
         });
 
-        await club.save();
-
+       
         user.clubAffiliations.push({
             clubId: club._id,
             clubName: club.name,
-            joinedAt: new Date(),
+            role: role,
+            joinedAt
         });
 
-        await user.save();
-
-        const updatedClub = await Club.findById(club._id)
-            .populate('clubLeadId', 'email name role')
-            .populate('clubMembers.student', 'email role');
+        
+        await Promise.all([club.save(), user.save()]);
 
         res.status(200).json({
-            message: 'Member added successfully',
-            club: updatedClub
+            message: `User successfully assigned role: ${role}`,
+            newMember: {
+                userId: user._id,
+                name: user.name,
+                email: user.email,
+                role,
+                joinedAt
+            }
         });
 
     } catch (error) {
+        console.error('Error assigning role:', error);
         res.status(500).json({
-            message: 'Error adding member to club',
+            message: 'Error assigning role to club member',
             error: error.message
         });
     }
 };
+
+
+
 
 const clubAdminUsingID= async (req, res) => {
     const { userId } = req.params;
@@ -339,7 +361,7 @@ const getUserClubAffiliationsWithDetails = async (req, res) => {
 module.exports = {
     getAllClubs,
     createClub,
-    addMemberToClub,
+   assignRoleToClubMember,
     getClubDetails,
     clubAdminUsingID ,
     getClubDetailsById,

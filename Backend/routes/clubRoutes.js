@@ -6,7 +6,7 @@ const JoinRequest=require("../models/JoinRequest")
 const { 
     getAllClubs, 
     createClub, 
-    addMemberToClub, 
+    assignRoleToClubMember, 
     getClubDetails ,
     clubAdminUsingID,
      getClubDetailsById,
@@ -37,8 +37,8 @@ router.post(
 router.post(
     '/add-member', 
     auth, 
-    authorize([ 'clubAdmin']), 
-    addMemberToClub
+    authorize([ 'superAdmin']), 
+   assignRoleToClubMember
 );
 
 

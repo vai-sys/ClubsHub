@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { JWT_SECRET, JWT_EXPIRATION, UserRoles } = require('../config/constants');
+const Club=require("../models/Club")
 
 const generateToken = (user) => {
   const payload = {
@@ -359,7 +360,7 @@ exports.searchUsers = async (req, res) => {
   try {
     const { query } = req.query;
     
-    // Validate query parameter
+   
     if (!query || query.length < 3) {
       return res.status(400).json({
         success: false,
@@ -367,22 +368,22 @@ exports.searchUsers = async (req, res) => {
       });
     }
 
-    // Extract user ID from auth token to exclude current user from results
+   
     const currentUserId = req.user.id;
 
-    // Create regex for case-insensitive search
+
     const searchRegex = new RegExp(query, 'i');
 
-    // Search for users by name or email, excluding the current user
+   
     const users = await User.find({
-      _id: { $ne: currentUserId }, // Exclude current user
+      _id: { $ne: currentUserId }, 
       $or: [
         { name: searchRegex },
         { email: searchRegex }
       ]
     })
-    .select('_id name email profileImage') // Select only necessary fields
-    .limit(10); // Limit results for performance
+    .select('_id name email profileImage')
+    .limit(10); 
 
     return res.status(200).json({
       success: true,
@@ -398,3 +399,75 @@ exports.searchUsers = async (req, res) => {
     });
   }
 };
+
+
+exports.getAllUsers = async (req, res) => {
+  try {
+   
+    const users = await User.find({}).select('name email role department year clubAffiliations image isActive lastLogin createdAt');
+    
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });   
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching users',
+      error: err.message
+    });
+  }
+};
+
+
+exports.getEligibleUsers = async (req, res) => {
+    try {
+        const requestingUser = req.user;
+
+      
+        if (requestingUser.role !== 'superAdmin') {
+            return res.status(403).json({
+                message: 'Only super admins can fetch eligible users'
+            });
+        }
+
+        const { clubId } = req.query;
+
+        if (!clubId) {
+            return res.status(400).json({
+                message: 'Club ID is required'
+            });
+        }
+
+      
+        const club = await Club.findOne({ _id: clubId, isActive: true });
+
+        if (!club) {
+            return res.status(404).json({ message: 'Club not found or inactive' });
+        }
+
+        const existingMemberIds = club.clubMembers.map(member => member.student.toString());
+
+        
+        const eligibleUsers = await User.find({
+            _id: { $nin: existingMemberIds },
+            isActive: true
+        }).select('_id name email role');
+
+        res.status(200).json({
+            message: 'Eligible users fetched successfully',
+            eligibleUsers
+        });
+
+    } catch (error) {
+        console.error('Error fetching eligible users:', error);
+        res.status(500).json({
+            message: 'Error fetching eligible users',
+            error: error.message
+        });
+    }
+};
+
+
