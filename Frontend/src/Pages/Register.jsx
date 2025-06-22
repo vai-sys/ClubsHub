@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import api  from '../api'
 
 
 axios.defaults.withCredentials = true;
@@ -24,7 +25,7 @@ const Register = () => {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/club');
+        const response = await api.get('/api/club');
         setClubs(response.data);
       } catch (error) {
         console.error('Error fetching clubs:', error);
@@ -59,7 +60,7 @@ const Register = () => {
 
     try {
       validateForm();
-      await axios.post('http://localhost:3000/api/auth/register', formData);
+      await api.post('/api/auth/register', formData);
       navigate('/login');
     } catch (error) {
       setError(error.response?.data?.message || error.message || 'Registration failed');
