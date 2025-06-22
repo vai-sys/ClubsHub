@@ -36,6 +36,12 @@ app.use('/api/event',eventRoutes)
 app.use('/api/announcement',announcement);
 app.use('/api/competition',competition)
 
+
+
+app.get('/', (req, res) => {
+  res.send('hii there');
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 

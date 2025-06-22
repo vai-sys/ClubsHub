@@ -28,12 +28,10 @@ const Clubs = () => {
   const getAllClubs = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/club', {
-        credentials: 'include'
-      });
-      const data = await response.json();
-  
-      setClubs(data);
+    
+      const response=await api.get('/club');
+      console.log("response",response.data);
+      setClubs(response.data);
       
      
     } catch (error) {
