@@ -25,7 +25,7 @@ const Register = () => {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await api.get('/api/club');
+        const response = await api.get('/club');
         setClubs(response.data);
       } catch (error) {
         console.error('Error fetching clubs:', error);
