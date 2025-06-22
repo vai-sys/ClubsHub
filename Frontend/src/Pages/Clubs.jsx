@@ -130,7 +130,7 @@ const Clubs = () => {
               >
                 <div className="relative h-64 overflow-hidden">
                   <img
-                    src={`http://localhost:3000/${club.clubLogo.replace(/\\/g, '/')}`}
+                    src={`${import.meta.env.VITE_API_URL}/${club.clubLogo.replace(/\\/g, '/')}`}
                     alt={`${club.name} banner`}
                     className="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-110"
                   />

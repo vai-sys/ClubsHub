@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserPlus, Check, AlertCircle, Loader, RefreshCw, Building2 } from 'lucide-react';
 
-// Mock API for demonstration
+
 const api = {
   get: async (url) => {
-    // Simulate API delay
+  
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     if (url === '/club') {
@@ -41,7 +41,7 @@ const api = {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     if (url === '/club/add-member') {
-      // Simulate success
+    
       return {
         data: {
           message: 'Role assigned successfully!'
@@ -79,7 +79,7 @@ const AssignRole = () => {
   useEffect(() => {
     if (selectedClubId) {
       fetchEligibleUsers();
-      // Reset user and role selection when club changes
+   
       setSelectedUserId('');
       setSelectedRole('');
       setMessage('');
@@ -151,7 +151,6 @@ const AssignRole = () => {
       setSelectedUserId('');
       setSelectedRole('');
       
-      // Refresh eligible users list
       fetchEligibleUsers();
     } catch (err) {
       console.error('Error assigning role:', err);
@@ -171,7 +170,7 @@ const AssignRole = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-100">
-      {/* Header */}
+ 
       <div className="flex items-center mb-8">
         <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mr-4">
           <UserPlus className="w-6 h-6 text-blue-600" />
@@ -183,7 +182,7 @@ const AssignRole = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Club Selection */}
+ 
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-700">
             Select Club <span className="text-red-500">*</span>
@@ -230,7 +229,7 @@ const AssignRole = () => {
           )}
         </div>
 
-        {/* User Selection */}
+       
         {selectedClubId && (
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -279,7 +278,7 @@ const AssignRole = () => {
           </div>
         )}
 
-        {/* Role Selection */}
+       
         {selectedUserId && (
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -321,7 +320,7 @@ const AssignRole = () => {
           </div>
         )}
 
-        {/* Submit Button */}
+       
         <div className="pt-4">
           <button 
             type="submit" 
@@ -347,7 +346,7 @@ const AssignRole = () => {
         </div>
       </form>
 
-      {/* Message Display */}
+    
       {message && (
         <div className={`mt-6 p-4 rounded-lg flex items-start ${
           messageType === 'success' 

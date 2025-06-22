@@ -176,7 +176,7 @@ const UserList = () => {
     user?.name?.charAt(0)?.toUpperCase()
   ) : (
     <img 
-      src={`http://localhost:3000${user.image}`} 
+      src={`${import.meta.env.VITE_API_URL}${user.image}`} 
       alt="profile" 
       className="w-full h-full object-cover rounded-full"
     />

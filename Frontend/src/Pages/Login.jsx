@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import axios from 'axios';
+import api from '../api';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -32,7 +33,7 @@ const Login = () => {
     try {
       validateForm();
 
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await api.post('/auth/login', {
         email: formData.email,
         password: formData.password
       });

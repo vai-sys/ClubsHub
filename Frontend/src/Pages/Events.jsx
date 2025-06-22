@@ -256,7 +256,7 @@ const Events = () => {
                     <div className="absolute top-4 right-4 z-10">
                       {event.clubLogo ? (
                         <img
-                          src={`http://localhost:3000/${event.clubLogo.replace(/\\/g, '/')}`}
+                          src={`${import.meta.env.VITE_API_URL}/${event.clubLogo.replace(/\\/g, '/')}`}
                           alt={event.clubName}
                           className="w-12 h-12 rounded-full border-2 border-white shadow-md object-cover"
                         />

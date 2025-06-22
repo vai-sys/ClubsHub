@@ -24,7 +24,7 @@ const ListAnnouncement = () => {
   const [clubs, setClubs] = useState({});
   const [creators, setCreators] = useState({});
   const { user } = useContext(AuthContext);
-  const baseURL = "http://localhost:3000";
+
   
   const hasAdminAccess = user && (user.role === 'clubAdmin' || user.role === 'superAdmin');
 
@@ -266,7 +266,7 @@ const ListAnnouncement = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {a.attachments.map((file, index) => {
                         const fixedPath = file.replace(/\\/g, '/');
-                        const imageURL = `${baseURL}/${fixedPath}`;
+                        const imageURL = `${import.meta.env.VITE_API_URL}/${fixedPath}`;
                         const fileName = fixedPath.split('/').pop();
                         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileName);
 

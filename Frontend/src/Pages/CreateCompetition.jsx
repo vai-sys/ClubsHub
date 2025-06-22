@@ -186,7 +186,7 @@ export default function CreateCompetition() {
       const updatedRounds = [...prev.rounds];
       updatedRounds.splice(index, 1);
       
-      // Rename rounds to maintain sequential naming
+
       return {
         ...prev,
         rounds: updatedRounds.map((round, i) => ({
@@ -393,23 +393,11 @@ export default function CreateCompetition() {
               )}
             </div>
 
-            {/* <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Registration Deadline*
-              </label>
-              <input
-                type="datetime-local"
-                name="registrationDeadline"
-                value={formData.registrationDeadline}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div> */}
+           
           </div>
         </section>
 
-        {/* Prizes Section */}
+       
         <section className="bg-gray-50 p-6 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">Prizes*</h2>
@@ -479,7 +467,7 @@ export default function CreateCompetition() {
           )}
         </section>
 
-        {/* Evaluation Criteria Section */}
+        
         <section className="bg-gray-50 p-6 rounded-lg border border-gray-200">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Evaluation Criteria*</h2>
           
@@ -496,7 +484,7 @@ export default function CreateCompetition() {
           </div>
         </section>
 
-        {/* Rules Section */}
+        
         <section className="bg-gray-50 p-6 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">Competition Rules</h2>
@@ -538,7 +526,6 @@ export default function CreateCompetition() {
           )}
         </section>
 
-        {/* Judges Section */}
         <section className="bg-gray-50 p-6 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">Judges</h2>
@@ -621,7 +608,7 @@ export default function CreateCompetition() {
           )}
         </section>
 
-        {/* Rounds Section */}
+        
         <section className="bg-gray-50 p-6 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">Competition Rounds*</h2>
@@ -718,7 +705,7 @@ export default function CreateCompetition() {
           </div>
         </section>
 
-        {/* Submit Button */}
+        
         <div className="pt-4 flex justify-between">
           <button
             type="button"

@@ -183,7 +183,7 @@ const ActivityDashboard = () => {
   const getLogoUrl = (logoPath) => {
     if (!logoPath) return null;
     const cleanPath = logoPath.replace(/\\/g, '/');
-    return `http://localhost:3000/${cleanPath}`;
+    return `${import.meta.env.VITE_API_URL}/${cleanPath}`;
   };
 
   const getEventTypeColor = (type) => {

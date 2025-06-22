@@ -10,20 +10,20 @@ const EditAnnouncement = ({ announcementId, initialData, onUpdated, onCancel }) 
   const [attachments, setAttachments] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const baseURL = "http://localhost:3000";
+
   
   useEffect(() => {
-    // If initialData is provided, use it to populate the form
+   
     if (initialData) {
       setTitle(initialData.title || '');
       setDescription(initialData.description || '');
       setExistingAttachments(initialData.attachments || []);
     } else {
-      // Otherwise fetch the announcement data
+   
       const fetchAnnouncementData = async () => {
         try {
           const res = await api.get(`/announcement/${announcementId}`);
-          // Check for different response structures
+       
           const announcement = res.data.data || res.data.announcement || res.data;
           setTitle(announcement.title || '');
           setDescription(announcement.description || '');

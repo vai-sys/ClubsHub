@@ -19,7 +19,7 @@ const ProfileImage = ({ src, name, size = "w-8 h-8" }) => {
   const [imageError, setImageError] = useState(false);
   
 
-  const imageUrl = src ? `${src.startsWith('http') ? src : `http://localhost:3000${src}`}` : null;
+  const imageUrl = src ? `${src.startsWith('http') ? src : `${import.meta.env.VITE_API_URL}${src}`}` : null;
   
   if (!imageUrl || imageError) {
     return (

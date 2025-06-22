@@ -177,7 +177,7 @@ const Profile = () => {
                  
                   {profile?.image ? (
                     <img 
-                    src={`http://localhost:3000${profile.image}?t=${new Date().getTime()}`} 
+                    src={`${import.meta.env.VITE_API_URL}${profile.image}?t=${new Date().getTime()}`} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />
