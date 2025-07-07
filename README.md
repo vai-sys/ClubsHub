@@ -85,7 +85,11 @@ npm run dev
 | **Faculty Coordinator** | Review and approve/reject events from club leads |
 | **Super Admin** | Final approval for events, manage all users, clubs, and events |
 
-
+## Project is Live at https://clubs-hub.vercel.app/
+   - login as Student : rutujabagad@gmail.com
+   - login as clubAdmin :varadpawar@gmail.com
+   - login as FacultCoordinater : nilesh@gmail.com
+   - login as SuperAdmin :kavitamoholkar@gmail.com
 
 ## 📌 Future Enhancements
 - 📢 **Push Notifications for Event Updates**
