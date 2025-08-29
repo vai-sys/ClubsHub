@@ -1,4 +1,4 @@
-# ClubShub - College Clubs Management Platform
+# ClubsHub - College Clubs Management Platform
 
 
 
