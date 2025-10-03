@@ -35,6 +35,7 @@ const EventInfo = () => {
     const fetchEvent = async () => {
       try {
         const response = await api.get(`/event/${id}`);
+        console.log("event",response);
         
         if (response.data.success) {
           setEvent(response.data.data);

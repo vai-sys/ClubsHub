@@ -60,7 +60,7 @@ const Register = () => {
 
     try {
       validateForm();
-      await api.post('/api/auth/register', formData);
+      await api.post('/auth/register', formData);
       navigate('/login');
     } catch (error) {
       setError(error.response?.data?.message || error.message || 'Registration failed');

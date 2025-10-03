@@ -54,7 +54,7 @@ const TeamCard = ({ team, event }) => {
               {team.members?.length || 0} member{team.members?.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <StatusBadge status={team.paymentStatus ? "PAID" : "PENDING"} />
+          {/* <StatusBadge status={team.paymentStatus ? "PAID" : "PENDING"} /> */}
         </div>
       </div>
 
@@ -127,7 +127,7 @@ const TeamCard = ({ team, event }) => {
             </span>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
+          {/* <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2 text-gray-600">
               <CreditCard className="w-4 h-4" />
               <span>Payment</span>
@@ -135,7 +135,7 @@ const TeamCard = ({ team, event }) => {
             <span className={`font-medium ${team.paymentStatus ? 'text-green-600' : 'text-yellow-600'}`}>
               {team.paymentStatus ? 'Completed' : 'Pending'}
             </span>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

@@ -59,6 +59,7 @@ export default function RegistrationModal({
 
     try {
       const response = await api.get(`/auth/search?query=${query}`);
+      console.log("search Response:",response);
       
       if (response.data && response.data.success) {
         setSearchResults(response.data.data || []);
@@ -105,66 +106,131 @@ export default function RegistrationModal({
   };
 
   const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
+  if (e) e.preventDefault();
+  setError('');
+  setSuccess('');
+  setLoading(true);
 
-    try {
-      let url;
-      let body = {};
+  try {
+    const url = `/event/${eventId}/register`;
+    let body = {};
 
-      if (isCompetition) {
-        url = `/competition/${competitionId}/register`;
-
-        if (isTeamCompetition) {
-          if (!teamName.trim()) {
-            setError('Team name is required');
-            setLoading(false);
-            return;
-          }
-
-          // Validate team size
-          if (competitionDetails?.teamSizeLimit && 
-              teamMembers.length > (competitionDetails.teamSizeLimit - 1)) {
-            setError(`Team size cannot exceed ${competitionDetails.teamSizeLimit} members (including you)`);
-            setLoading(false);
-            return;
-          }
-
-          body = {
-            teamName,
-            teamMembers: teamMembers.map(member => member._id)
-          };
+    // If it’s a competition → attach team data
+    if (isCompetition) {
+      if (isTeamCompetition) {
+        if (!teamName.trim()) {
+          setError('Team name is required');
+          setLoading(false);
+          return;
         }
-      } else {
-        url = `/event/${eventId}/register`;
-      }
 
-      console.log(`Registering for ${isCompetition ? 'competition' : 'event'} with URL: ${url}`);
-      console.log('Request body:', body);
+        // Validate team size
+        if (
+          competitionDetails?.teamSizeLimit &&
+          teamMembers.length > (competitionDetails.teamSizeLimit - 1)
+        ) {
+          setError(
+            `Team size cannot exceed ${competitionDetails.teamSizeLimit} members (including you)`
+          );
+          setLoading(false);
+          return;
+        }
 
-      const response = await api.post(url, body);
-      
-      console.log('Registration response:', response);
-
-      if (response.data && response.data.success) {
-        setSuccess(response.data.message || 'Registration successful!');
-        setTimeout(() => onClose(), 2000);
-      } else {
-        setError(response.data?.message || 'Registration failed');
+        body = {
+          teamName,
+          teamMembers: teamMembers.map((member) => member._id),
+        };
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      if (err.response && err.response.data) {
-        setError(err.response.data.message || 'Registration failed');
-      } else {
-        setError('Error processing registration');
-      }
-    } finally {
-      setLoading(false);
     }
-  };
+
+    console.log(
+      `Registering for ${isCompetition ? 'competition' : 'event'} with URL: ${url}`
+    );
+    console.log('Request body:', body);
+
+    const response = await api.post(url, body);
+
+    console.log('Registration response:', response);
+
+    if (response.data && response.data.success) {
+      setSuccess(response.data.message || 'Registration successful!');
+      setTimeout(() => onClose(), 2000);
+    } else {
+      setError(response.data?.message || 'Registration failed');
+    }
+  } catch (err) {
+    console.error('Registration error:', err);
+    if (err.response && err.response.data) {
+      setError(err.response.data.message || 'Registration failed');
+    } else {
+      setError('Error processing registration');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // const handleSubmit = async (e) => {
+  //   if (e) e.preventDefault();
+  //   setError('');
+  //   setSuccess('');
+  //   setLoading(true);
+
+  //   try {
+  //     let url;
+  //     let body = {};
+
+  //     if (isCompetition) {
+      
+
+  //       if (isTeamCompetition) {
+  //         if (!teamName.trim()) {
+  //           setError('Team name is required');
+  //           setLoading(false);
+  //           return;
+  //         }
+
+  //         // Validate team size
+  //         if (competitionDetails?.teamSizeLimit && 
+  //             teamMembers.length > (competitionDetails.teamSizeLimit - 1)) {
+  //           setError(`Team size cannot exceed ${competitionDetails.teamSizeLimit} members (including you)`);
+  //           setLoading(false);
+  //           return;
+  //         }
+
+  //         body = {
+  //           teamName,
+  //           teamMembers: teamMembers.map(member => member._id)
+  //         };
+  //       }
+  //     } 
+  //     url = `/event/${eventId}/register`;
+
+  //     console.log(`Registering for ${isCompetition ? 'competition' : 'event'} with URL: ${url}`);
+  //     console.log('Request body:', body);
+
+  //     const response = await api.post(url, body);
+      
+  //     console.log('Registration response:', response);
+
+  //     if (response.data && response.data.success) {
+  //       setSuccess(response.data.message || 'Registration successful!');
+  //       setTimeout(() => onClose(), 2000);
+  //     } else {
+  //       setError(response.data?.message || 'Registration failed');
+  //     }
+  //   } catch (err) {
+  //     console.error('Registration error:', err);
+  //     if (err.response && err.response.data) {
+  //       setError(err.response.data.message || 'Registration failed');
+  //     } else {
+  //       setError('Error processing registration');
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   if (!isOpen) return null;
 
