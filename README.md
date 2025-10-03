@@ -21,7 +21,7 @@ ClubShub is a **MERN-stack** based web application designed to **streamline club
 - 🔹 **Announcements**
 - 🔹 **Track Activity**
 - 🔹 **User Authentication & Authorization (JWT-based)**
-- 🔹 **Real-time Updates & Notifications**
+
 
 
 
@@ -86,6 +86,10 @@ npm run dev
 | **Super Admin** | Final approval for events, manage all users, clubs, and events |
 
 
+   - login as Student : rutujabagad@gmail.com
+   - login as clubAdmin :varadpawar@gmail.com
+   - login as FacultCoordinater : nilesh@gmail.com
+   - login as SuperAdmin :kavitamoholkar@gmail.com
 
 ## 📌 Future Enhancements
 - 📢 **Push Notifications for Event Updates**
@@ -96,16 +100,6 @@ npm run dev
   - **User Engagement Insights**
 
 
-
-## 📜 License
-This project is open-source under the **MIT License**.
-
-## 👨‍💻 Contributing
-Feel free to fork and contribute! Create a pull request with your changes.
-
----
-### 💡 Need Help?
-For issues or feature requests, raise an issue on [GitHub](https://github.com/vai-sys/ClubsHub).
 
 
 
