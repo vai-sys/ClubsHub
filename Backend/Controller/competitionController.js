@@ -46,7 +46,7 @@ const createCompetition = async (req, res) => {
             });
         }
 
-        const { eventId, ...competitionDetails } = req.body;
+        const { eventId , ...competitionDetails } = req.body;
         if (!eventId) {
             return res.status(400).json({ 
                 success: false,
@@ -90,7 +90,7 @@ const createCompetition = async (req, res) => {
 
        
         const competitionData = {
-            event: eventId,
+            eventId: eventId,
             ...competitionDetails
         };
 
@@ -133,242 +133,242 @@ const createCompetition = async (req, res) => {
 };
 
 
-const registerForCompetition = async (req, res) => {
-    try {
-        const { competitionId } = req.params;
-        const { teamName, teamMembers } = req.body;
+// const registerForCompetition = async (req, res) => {
+//     try {
+//         const { competitionId } = req.params;
+//         const { teamName, teamMembers } = req.body;
 
        
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Invalid or missing Authorization header' 
-            });
-        }
+//         const authHeader = req.headers.authorization;
+//         if (!authHeader?.startsWith('Bearer ')) {
+//             return res.status(401).json({ 
+//                 success: false,
+//                 message: 'Invalid or missing Authorization header' 
+//             });
+//         }
         
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.id;
+//         const token = authHeader.split(' ')[1];
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const userId = decoded.id;
         
       
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
+//         const user = await User.findById(userId);
+//         if (!user) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'User not found'
+//             });
+//         }
 
         
-        const competition = await Competition.findById(competitionId).populate('event');
-        if (!competition) {
-            return res.status(404).json({
-                success: false,
-                message: 'Competition not found'
-            });
-        }
+//         const competition = await Competition.findById(competitionId).populate('event');
+//         if (!competition) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Competition not found'
+//             });
+//         }
 
-        // Check if registration is still open
-        if (new Date() > new Date(competition.registrationDeadline)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Registration deadline has passed'
-            });
-        }
+//         // Check if registration is still open
+//         if (new Date() > new Date(competition.registrationDeadline)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Registration deadline has passed'
+//             });
+//         }
 
-        // Check if the event is approved
-        const event = competition.event;
-        if (event.approvalStatus !== 'SUPER_ADMIN_APPROVED') {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot register for a competition that is not fully approved'
-            });
-        }
+//         // Check if the event is approved
+//         const event = competition.event;
+//         if (event.approvalStatus !== 'SUPER_ADMIN_APPROVED') {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Cannot register for a competition that is not fully approved'
+//             });
+//         }
 
-        // Check if the event is canceled
-        if (event.status === 'CANCELLED') {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot register for a canceled event'
-            });
-        }
+//         // Check if the event is canceled
+//         if (event.status === 'CANCELLED') {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Cannot register for a canceled event'
+//             });
+//         }
 
-        // Check if the max participants limit is reached
-        if (event.maxParticipants && 
-            event.registeredParticipants && 
-            event.registeredParticipants.length >= event.maxParticipants) {
-            return res.status(400).json({
-                success: false,
-                message: 'Maximum participant limit reached'
-            });
-        }
+//         // Check if the max participants limit is reached
+//         if (event.maxParticipants && 
+//             event.registeredParticipants && 
+//             event.registeredParticipants.length >= event.maxParticipants) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Maximum participant limit reached'
+//             });
+//         }
 
-        // Check if user already registered
-        const isAlreadyRegistered = event.registeredParticipants.some(
-            p => p.userId.toString() === userId
-        );
+//         // Check if user already registered
+//         const isAlreadyRegistered = event.registeredParticipants.some(
+//             p => p.userId.toString() === userId
+//         );
         
-        if (isAlreadyRegistered) {
-            return res.status(400).json({
-                success: false,
-                message: 'You are already registered for this competition'
-            });
-        }
+//         if (isAlreadyRegistered) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'You are already registered for this competition'
+//             });
+//         }
 
-        // If it's a team competition, handle team registration
-        if (competition.teamAllowed) {
-            if (!teamName) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Team name is required for team competitions'
-                });
-            }
+//         // If it's a team competition, handle team registration
+//         if (competition.teamAllowed) {
+//             if (!teamName) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: 'Team name is required for team competitions'
+//                 });
+//             }
 
-            // Check team size limit
-            if (competition.teamSizeLimit && 
-                (!teamMembers || teamMembers.length > competition.teamSizeLimit - 1)) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Team size cannot exceed ${competition.teamSizeLimit} members (including you)`
-                });
-            }
+//             // Check team size limit
+//             if (competition.teamSizeLimit && 
+//                 (!teamMembers || teamMembers.length > competition.teamSizeLimit - 1)) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: `Team size cannot exceed ${competition.teamSizeLimit} members (including you)`
+//                 });
+//             }
 
-            // Validate all team members exist
-            if (teamMembers && teamMembers.length > 0) {
-                const members = await User.find({ _id: { $in: teamMembers } });
-                if (members.length !== teamMembers.length) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'One or more team members do not exist'
-                    });
-                }
+//             // Validate all team members exist
+//             if (teamMembers && teamMembers.length > 0) {
+//                 const members = await User.find({ _id: { $in: teamMembers } });
+//                 if (members.length !== teamMembers.length) {
+//                     return res.status(400).json({
+//                         success: false,
+//                         message: 'One or more team members do not exist'
+//                     });
+//                 }
 
-                // Check if any team member is already registered
-                for (const memberId of teamMembers) {
-                    const memberRegistered = event.registeredParticipants.some(
-                        p => p.userId.toString() === memberId.toString()
-                    );
+//                 // Check if any team member is already registered
+//                 for (const memberId of teamMembers) {
+//                     const memberRegistered = event.registeredParticipants.some(
+//                         p => p.userId.toString() === memberId.toString()
+//                     );
                     
-                    if (memberRegistered) {
-                        const member = members.find(m => m._id.toString() === memberId.toString());
-                        return res.status(400).json({
-                            success: false,
-                            message: `Team member ${member.name} is already registered for this competition`
-                        });
-                    }
-                }
-            }
+//                     if (memberRegistered) {
+//                         const member = members.find(m => m._id.toString() === memberId.toString());
+//                         return res.status(400).json({
+//                             success: false,
+//                             message: `Team member ${member.name} is already registered for this competition`
+//                         });
+//                     }
+//                 }
+//             }
 
-            // Create a new team
-            const team = await Team.create({
-                name: teamName,
-                leader: userId,
-                members: teamMembers || [],
-                competitionId: competitionId,
-                eventId: event._id
-            });
+//             // Create a new team
+//             const team = await Team.create({
+//                 name: teamName,
+//                 leader: userId,
+//                 members: teamMembers || [],
+//                 competitionId: competitionId,
+//                 eventId: event._id
+//             });
 
-            // Register the team leader
-            await Event.findByIdAndUpdate(
-                event._id,
-                {
-                    $push: {
-                        registeredParticipants: {
-                            userId: userId,
-                            registrationDate: new Date(),
-                            status: 'CONFIRMED',
-                            isTeamLeader: true,
-                            teamId: team._id
-                        }
-                    }
-                }
-            );
+//             // Register the team leader
+//             await Event.findByIdAndUpdate(
+//                 event._id,
+//                 {
+//                     $push: {
+//                         registeredParticipants: {
+//                             userId: userId,
+//                             registrationDate: new Date(),
+//                             status: 'CONFIRMED',
+//                             isTeamLeader: true,
+//                             teamId: team._id
+//                         }
+//                     }
+//                 }
+//             );
 
-            // Register team members
-            if (teamMembers && teamMembers.length > 0) {
-                for (const memberId of teamMembers) {
-                    await Event.findByIdAndUpdate(
-                        event._id,
-                        {
-                            $push: {
-                                registeredParticipants: {
-                                    userId: memberId,
-                                    registrationDate: new Date(),
-                                    status: 'CONFIRMED',
-                                    isTeamLeader: false,
-                                    teamId: team._id
-                                }
-                            }
-                        }
-                    );
-                }
-            }
+//             // Register team members
+//             if (teamMembers && teamMembers.length > 0) {
+//                 for (const memberId of teamMembers) {
+//                     await Event.findByIdAndUpdate(
+//                         event._id,
+//                         {
+//                             $push: {
+//                                 registeredParticipants: {
+//                                     userId: memberId,
+//                                     registrationDate: new Date(),
+//                                     status: 'CONFIRMED',
+//                                     isTeamLeader: false,
+//                                     teamId: team._id
+//                                 }
+//                             }
+//                         }
+//                     );
+//                 }
+//             }
 
-            return res.status(200).json({
-                success: true,
-                message: 'Team registered successfully for the competition',
-                data: {
-                    team,
-                    eventName: event.name,
-                    competitionName: competition.name || 'Competition'
-                }
-            });
-        } else {
-            // Handle individual registration
-            if (teamMembers && teamMembers.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'This is an individual competition. Team registration is not allowed'
-                });
-            }
+//             return res.status(200).json({
+//                 success: true,
+//                 message: 'Team registered successfully for the competition',
+//                 data: {
+//                     team,
+//                     eventName: event.name,
+//                     competitionName: competition.name || 'Competition'
+//                 }
+//             });
+//         } else {
+//             // Handle individual registration
+//             if (teamMembers && teamMembers.length > 0) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: 'This is an individual competition. Team registration is not allowed'
+//                 });
+//             }
 
-            // Register the individual
-            await Event.findByIdAndUpdate(
-                event._id,
-                {
-                    $push: {
-                        registeredParticipants: {
-                            userId: userId,
-                            registrationDate: new Date(),
-                            status: 'CONFIRMED'
-                        }
-                    }
-                }
-            );
+//             // Register the individual
+//             await Event.findByIdAndUpdate(
+//                 event._id,
+//                 {
+//                     $push: {
+//                         registeredParticipants: {
+//                             userId: userId,
+//                             registrationDate: new Date(),
+//                             status: 'CONFIRMED'
+//                         }
+//                     }
+//                 }
+//             );
 
-            return res.status(200).json({
-                success: true,
-                message: 'Successfully registered for the competition',
-                data: {
-                    participant: {
-                        name: user.name,
-                        email: user.email,
-                        userId: user._id
-                    },
-                    eventName: event.name,
-                    competitionName: competition.name || 'Competition'
-                }
-            });
-        }
+//             return res.status(200).json({
+//                 success: true,
+//                 message: 'Successfully registered for the competition',
+//                 data: {
+//                     participant: {
+//                         name: user.name,
+//                         email: user.email,
+//                         userId: user._id
+//                     },
+//                     eventName: event.name,
+//                     competitionName: competition.name || 'Competition'
+//                 }
+//             });
+//         }
 
-    } catch (error) {
-        console.error('Competition registration error:', error);
+//     } catch (error) {
+//         console.error('Competition registration error:', error);
         
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token'
-            });
-        }
+//         if (error.name === 'JsonWebTokenError') {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: 'Invalid token'
+//             });
+//         }
 
-        return res.status(500).json({
-            success: false,
-            message: 'Error registering for competition',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-        });
-    }
-};
+//         return res.status(500).json({
+//             success: false,
+//             message: 'Error registering for competition',
+//             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+//         });
+//     }
+// };
 
 
 const getCompetitionById = async (req, res) => {
@@ -377,7 +377,7 @@ const getCompetitionById = async (req, res) => {
 
         const competition = await Competition.findById(id)
             .populate({
-                path: 'event',
+                path: 'eventId',
                 populate: [
                     { path: 'clubId', select: 'name clubLogo' },
                     { path: 'createdBy', select: 'name email' }
@@ -889,36 +889,46 @@ const cancelRegistration = async (req, res) => {
 };
 
 const getCompetitionByEventId = async (req, res) => {
-  try {
-    let { eventId } = req.params;
-    console.log("Raw eventId:", JSON.stringify(eventId));
+    try {
+        const { eventId } = req.params;
 
-    eventId = eventId.trim().replace(/[\s\r\n]+/g, '');
-    console.log("Sanitized eventId:", JSON.stringify(eventId));
+        if (!eventId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Event ID is required'
+            });
+        }
 
-    if (!mongoose.Types.ObjectId.isValid(eventId)) {
-      console.log("Final eventId failed validation:", eventId, "Length:", eventId.length);
-      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
+        
+        const competition = await Competition.findOne({ eventId })
+            .populate({
+                path: 'eventId', 
+                populate: [
+                    { path: 'clubId', select: 'name clubLogo' },
+                    { path: 'createdBy', select: 'name email' }
+                ]
+            });
+
+        if (!competition) {
+            return res.status(404).json({
+                success: false,
+                message: 'Competition not found for this event'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: competition
+        });
+
+    } catch (error) {
+        console.error('Error fetching competition by eventId:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching competition',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
     }
-
-    const objectIdEventId = new mongoose.Types.ObjectId(eventId);
-
-    const competition = await Competition.findOne({ event: objectIdEventId }).lean();
-
-    if (!competition) {
-      return res.status(404).json({ success: false, message: 'Competition not found' });
-    }
-
-    return res.status(200).json({ success: true, data: competition });
-
-  } catch (error) {
-    console.error("Error in getCompetitionByEventId:", error);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
 };
 
 
@@ -926,7 +936,7 @@ const getCompetitionByEventId = async (req, res) => {
 module.exports = {
     
     createCompetition,
-    registerForCompetition,
+    // registerForCompetition,
     getCompetitionById,
     updateCompetitionRounds,
     setRoundLiveStatus,

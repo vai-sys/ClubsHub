@@ -3,7 +3,7 @@ const router = express.Router();
 const { auth, authorize } = require('../middleware/authMiddleware');
 const { 
     createCompetition,
-    registerForCompetition,
+    // registerForCompetition,
     getCompetitionById,
     updateCompetitionRounds,
     setRoundLiveStatus,
@@ -21,7 +21,7 @@ router.post('/', auth, authorize(['clubAdmin']),  createCompetition);
 router.get('/:id', auth, authorize(['superAdmin', 'clubAdmin', 'facultyCoordinator', 'member']), getCompetitionById);
 
 
-router.post('/:competitionId/register', auth, authorize(['member']), registerForCompetition);
+// router.post('/:competitionId/register', auth, authorize(['member']), registerForCompetition);
 
 
 router.put('/:competitionId/rounds', auth, authorize(['clubAdmin']), updateCompetitionRounds);

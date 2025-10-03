@@ -17,16 +17,19 @@ const EventSchema = new Schema({
   platformLink: { type: String },
   eventBanner: { type: String },
   registeredParticipants: [{
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    registrationDate: { type: Date, default: Date.now },
-    status: {
-      type: String,
-      enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'ATTENDED'],
-      default: 'PENDING'
-    },
-    isTeamLeader: { type: Boolean, default: false },
-    teamId: { type: Schema.Types.ObjectId, ref: 'Team' } 
-  }],  
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  registrationDate: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'ATTENDED'],
+    default: 'PENDING'
+  },
+  isTeamLeader: { type: Boolean, default: false },
+  teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
+  qrToken: { type: String, unique: true },    
+  attendanceMarkedAt: { type: Date }         
+}],
+
   eventType: {
     type: String,
     enum: ['WORKSHOP', 'SEMINAR', 'COMPETITION', 'MEETUP', 'CULTURAL', 'TECHNICAL', 'OTHER'],
@@ -68,7 +71,7 @@ const EventSchema = new Schema({
 
 
 const CompetitionSchema = new Schema({
-  event: { type: Schema.Types.ObjectId, ref: 'Event', required: true },  
+  eventId: { type: Schema.Types.ObjectId, ref: 'Event', required: true },  
   rounds: [{
     name: { type: String, required: true }, 
     description: { type: String },  

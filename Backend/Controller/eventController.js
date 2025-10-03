@@ -6,10 +6,13 @@ const {JWT_SECRET} =require('../config/constants')
 const Club =require('../models/Club')
 const { UserRoles } = require('../config/constants');
 const mongoose=require("mongoose");
+const { v4: uuidv4 } = require("uuid");
+const QRCode = require("qrcode");
+const {Competition}=require("../models/Event")
+const Team=require("../models/Team")
 
 const createEvent = async (req, res) => {
     try {
-     
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({ 
@@ -17,7 +20,7 @@ const createEvent = async (req, res) => {
                 message: 'Invalid or missing Authorization header' 
             });
         }
-        
+
         const token = authHeader.split(' ')[1];
         if (!token) {
             return res.status(401).json({ 
@@ -26,11 +29,9 @@ const createEvent = async (req, res) => {
             });
         }
 
-    
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.id;
-        console.log(decoded.id)
-        
+
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({
@@ -39,7 +40,6 @@ const createEvent = async (req, res) => {
             });
         }
 
-       
         if (user.role !== UserRoles.CLUB_ADMIN) {
             return res.status(403).json({ 
                 success: false,
@@ -47,8 +47,8 @@ const createEvent = async (req, res) => {
             });
         }
 
-       
-        const { clubId, ...eventDetails } = req.body;
+        const { clubId, date, duration, ...eventDetails } = req.body;
+
         if (!clubId) {
             return res.status(400).json({ 
                 success: false,
@@ -64,7 +64,6 @@ const createEvent = async (req, res) => {
             });
         }
 
-   
         if (club.clubLeadId.toString() !== userId) {
             return res.status(403).json({
                 success: false,
@@ -72,11 +71,15 @@ const createEvent = async (req, res) => {
             });
         }
 
+        
       
+
         const eventData = {
             ...eventDetails,
             clubId,
             createdBy: userId,
+            date,
+            duration,
             approvalStatus: 'PENDING',
             facultyApproval: {
                 approved: false,
@@ -90,19 +93,16 @@ const createEvent = async (req, res) => {
             }
         };
 
-       
         if (req.files) {
             if (req.files.eventBanner?.[0]) {
                 eventData.eventBanner = req.files.eventBanner[0].path;
             }
-            console.log(eventData.eventBanner)
-            
-            if (req.files && req.files.attachments) {            
-                 eventData.attachments = req.files.attachments.map(file => file.path);
-         }          
+
+            if (req.files.attachments) {            
+                eventData.attachments = req.files.attachments.map(file => file.path);
+            }
         }
 
-       
         const event = await Event.create(eventData);
 
         return res.status(201).json({
@@ -763,13 +763,12 @@ const getEventById = async (req, res) => {
     }
 };
 
-
-
 const registerForEvent = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(id);
+        const { teamName, teamMembers = [] } = req.body; 
 
+       
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({
@@ -781,105 +780,162 @@ const registerForEvent = async (req, res) => {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decoded.id;
-       
 
-      
         const user = await User.findById(userId);
-        
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-      
         const event = await Event.findById(id);
-        console.log("event",event)
         if (!event) {
-            return res.status(404).json({
-                success: false,
-                message: 'Event not found',
-            });
+            return res.status(404).json({ success: false, message: 'Event not found' });
         }
 
-     
         if (new Date() > new Date(event.registrationDeadline)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Registration deadline has passed',
-            });
+            return res.status(400).json({ success: false, message: 'Registration deadline has passed' });
         }
 
-       
         if (event.status === 'CANCELLED') {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot register for a canceled event',
-            });
+            return res.status(400).json({ success: false, message: 'Cannot register for a canceled event' });
         }
 
-       
         if (event.maxParticipants && event.registeredParticipants.length >= event.maxParticipants) {
-            return res.status(400).json({
-                success: false,
-                message: 'Maximum participant limit reached',
-            });
+            return res.status(400).json({ success: false, message: 'Maximum participant limit reached' });
         }
 
-        
         const isAlreadyRegistered = event.registeredParticipants.some(p => p.userId.toString() === userId);
         if (isAlreadyRegistered) {
-            return res.status(400).json({
-                success: false,
-                message: 'You are already registered for this event',
+            return res.status(400).json({ success: false, message: 'You are already registered for this event' });
+        }
+
+       
+        let participantsToAdd = [];
+
+      
+        const competition = await Competition.findOne({ eventId: event._id });
+        let team = null;
+
+        if (competition) {
+            if (competition.teamAllowed) {
+                if (!teamName || !teamName.trim()) {
+                    return res.status(400).json({ success: false, message: 'Team name is required' });
+                }
+
+                if (teamMembers.length > (competition.teamSizeLimit - 1)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Team size cannot exceed ${competition.teamSizeLimit} members (including leader)`
+                    });
+                }
+
+                
+                team = await Team.create({
+                    name: teamName,
+                    leader: userId,
+                    members: teamMembers,
+                    competitionId: competition._id,
+                    eventId: event._id
+                });
+
+                // Leader entry
+                const leaderQr = uuidv4();
+                participantsToAdd.push({
+                    userId,
+                    registrationDate: new Date(),
+                    status: 'CONFIRMED',
+                    isTeamLeader: true,
+                    teamId: team._id,
+                    qrToken: leaderQr
+                });
+
+                // Add members
+                for (const memberId of teamMembers) {
+                    const memberQr = uuidv4();
+                    participantsToAdd.push({
+                        userId: memberId,
+                        registrationDate: new Date(),
+                        status: 'CONFIRMED',
+                        isTeamLeader: false,
+                        teamId: team._id,
+                        qrToken: memberQr
+                    });
+                }
+            } else {
+               
+                const qrToken = uuidv4();
+                participantsToAdd.push({
+                    userId,
+                    registrationDate: new Date(),
+                    status: 'CONFIRMED',
+                    isTeamLeader: true,
+                    qrToken
+                });
+            }
+        } else {
+            // Normal event
+            const qrToken = uuidv4();
+            participantsToAdd.push({
+                userId,
+                registrationDate: new Date(),
+                status: 'CONFIRMED',
+                qrToken
             });
         }
 
-        
+   
         await Event.findByIdAndUpdate(
             event._id,
-            {
-                $push: {
-                    registeredParticipants: {
-                        userId: userId,
-                        registrationDate: new Date(),
-                        status: 'CONFIRMED',
-                    },
-                },
-            }
+            { $push: { registeredParticipants: { $each: participantsToAdd } } }
         );
-       
+
+        //  Generate QR codes for all participants
+        const qrResponses = await Promise.all(
+            participantsToAdd.map(async (p) => {
+                const qrData = { userId: p.userId, eventId: event._id, qrToken: p.qrToken };
+                const qrImage = await QRCode.toDataURL(JSON.stringify(qrData));
+
+                const u = await User.findById(p.userId).select("name email");
+                return {
+                    userId: p.userId,
+                    name: u?.name || "Unknown",
+                    email: u?.email || "",
+                    isTeamLeader: p.isTeamLeader,
+                    qrCode: qrImage
+                };
+            })
+        );
 
         return res.status(200).json({
             success: true,
-            message: 'Successfully registered for the event',
+            message: 'Successfully registered',
             data: {
-                participant: {
-                    name: user.name,
-                    email: user.email,
-                    userId: user._id,
-                },
                 eventName: event.name,
-            },
+                competitionName: competition ? event.name : null,
+                team: team ? { teamName: team.name, teamId: team._id } : null,
+                participants: qrResponses
+            }
         });
+
     } catch (error) {
         console.error('Event registration error:', error);
 
         if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token',
-            });
+            return res.status(401).json({ success: false, message: 'Invalid token' });
         }
 
         return res.status(500).json({
             success: false,
             message: 'Error registering for event',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
 };
+
+
+
+
+
+
 
 
 const getParticipatedEvents = async (req, res) => {
@@ -1032,6 +1088,57 @@ const getClubEventParticipants = async (req, res) => {
   }
 };
 
+
+
+
+const markAttendance=async(req,res)=>{
+   try{
+
+     const { qrToken }=req.body;
+    if(!qrToken){
+        return res.status(400).json({success:false,message:"QR token is required"})
+
+    }
+
+    const event=await Event.findOne({"registeredparticipants.qrToken":qrToken});
+     if(!event){
+    return res.status(404).json({success:false,message:"No event found for this QR code"})
+    
+   }
+
+   const participant=event.registeredParticipants.find(p=>p.qrToken===qrToken);
+   if(!participant){
+    return res.status(404).json({success:false,
+        message:"participant not found for this QR code"
+    })
+   }
+   if(participant.status==="ATTENDED"){
+    return res.status(400).json({success:false, message:"Attendance already marked"})
+
+   }
+   participant.status="ATTENDED";
+   participant.attendanceMarkedAt=new Date();
+   await event.save();
+   return res.status(200).json({
+            success: true,
+            message: `Attendance marked for ${participant.userId}`,
+            data: participant
+        });
+
+   }
+  
+   catch(err){
+    console.error("Attendance making error:",err);
+    return res.status(500).json({
+        success:false,
+        message:"Error making attendance",
+        
+    })
+   }
+
+    
+
+}
 
 
 
